@@ -70,6 +70,7 @@ root: ROOT i=idxExpr? x=parExpr;
 // expressions
 expr
     : l=expr op r=expr  #exprOp
+    | parExpr           #exprPar
     | frac              #exprFrac
     | fx                #exprFunc
     | root              #exprRoot
