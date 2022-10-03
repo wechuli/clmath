@@ -207,7 +207,7 @@ public static class Program
                             if (missing.Count > 0)
                             {
                                 DumpVariables(ctx);
-                                Console.WriteLine($"Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
+                                Console.WriteLine($"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
                             } else PrintResult(func, func.Evaluate(ctx), ctx);
                             break;
                     }
