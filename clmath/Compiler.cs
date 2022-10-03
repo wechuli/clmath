@@ -159,7 +159,8 @@ public sealed class Component
             case Type.FuncX:
                 return $"{func.ToString()!.ToLower()}({x})";
             case Type.Root:
-                return $"root[{y?.ToString() ?? "2"}]({x})";
+                var n = y?.ToString() ?? "2";
+                return $"{(n == "2" ? "sqrt" : $"root[{n}]")}({x})";
             case Type.Frac:
                 return $"frac({x})({y})";
             case Type.Op:
