@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
@@ -8,35 +9,72 @@ namespace clmath;
 
 public static class Program
 {
+    private static readonly string Ext = ".math";
+    private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "comroid", "clmath");
     private static bool _exiting;
     private static bool _viewerAvail;
     private static string _viewer = null!;
 
+    static Program()
+    {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (!Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+    }
+    
     public static void Main(string[] args)
     {
         _viewer = Path.Combine(Directory.GetParent(typeof(Program).Assembly.Location)!.FullName, "clmath-viewer.exe");
         _viewerAvail = File.Exists(_viewer);
         if (args.Length == 0)
             StdIoMode();
-        else EvalFunc(string.Join(" ", args));
+        else
+        {
+            var arg = string.Join(" ", args);
+            if (File.Exists(arg))
+                EvalFunc(File.ReadAllText(arg));
+            else EvalFunc(arg);
+        }
     }
 
     private static void StdIoMode()
     {
         while (!_exiting)
         {
-            Console.Write("func> ");
+            Console.Write("math> ");
             var func = Console.ReadLine()!;
+            var cmds = func.Split(" ");
 
-            switch (func)
+            switch (cmds[0])
             {
                 case "": break;
                 case "exit": return;
                 case "help":
                     Console.WriteLine("Available commands:");
-                    Console.WriteLine("\thelp\tShows this text");
-                    Console.WriteLine("\texit\tCloses the program");
+                    Console.WriteLine("\thelp\t\tShows this text");
+                    Console.WriteLine("\texit\t\tCloses the program");
+                    Console.WriteLine("\tload <name>\tLoads function with the given name");
                     Console.WriteLine("\nEnter a function to start evaluating");
+                    break;
+                case "load":
+                    if (cmds.Length == 1)
+                    {
+                        var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
+                        if (funcs.Length == 0) 
+                            Console.WriteLine("No saved functions");
+                        else
+                        {
+                            Console.WriteLine("Available functions:");
+                            foreach (var file in funcs)
+                                Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length-Ext.Length)}");
+                        }
+                    } else
+                    {
+                        var path = Path.Combine(dir, cmds[1] + Ext);
+                        if (!File.Exists(path))
+                            Console.WriteLine($"Function with name {cmds[1]} not found");
+                        else EvalFunc(File.ReadAllText(path));
+                    }
                     break;
                 default:
                     EvalFunc(func);
@@ -80,46 +118,56 @@ public static class Program
                         Console.WriteLine($"Error: Variable {key} cannot use itself");
                     else ctx.var[key] = sub;
                 }
-                else switch (cmd)
+                else
                 {
-                    case "drop": return;
-                    case "exit":
-                        _exiting = true;
-                        return;
-                    case "help":
-                        Console.WriteLine("Available commands:");
-                        Console.WriteLine("\thelp\tShows this text");
-                        Console.WriteLine("\texit\tCloses the program");
-                        Console.WriteLine("\tdrop\tDrops the current function");
-                        Console.WriteLine("\tclear\tClears all variables from the cache");
-                        Console.WriteLine("\tdump\tPrints all variables in the cache");
-                        if (_viewerAvail)
-                            Console.WriteLine("\tgraph\tDisplays the function in a 2D graph");
-                        Console.WriteLine("\teval\tEvaluates the function, also achieved by just pressing return");
-                        Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
-                        break;
-                    case "dump":
-                        DumpVariables(ctx);
-                        break;
-                    case "clear":
-                        ctx.var.Clear();
-                        break;
-                    case "graph":
-                        if (vars.Count != 1)
-                            Console.WriteLine("Error: Requires exactly 1 variable");
-                        else Process.Start(_viewer, func.ToString()).WaitForExit();
-                        break;
-                    case "eval" or "":
-                        List<string> missing = new();
-                        foreach (var var in vars)
-                            if (!ctx.var.ContainsKey(var))
-                                missing.Add(var);
-                        if (missing.Count > 0)
-                        {
+                    var cmds = cmd.Split(" ");
+                    switch (cmds[0])
+                    {
+                        case "drop": return;
+                        case "exit":
+                            _exiting = true;
+                            return;
+                        case "help":
+                            Console.WriteLine("Available commands:");
+                            Console.WriteLine("\thelp\t\tShows this text");
+                            Console.WriteLine("\texit\t\tCloses the program");
+                            Console.WriteLine("\tdrop\t\tDrops the current function");
+                            Console.WriteLine("\tclear\t\tClears all variables from the cache");
+                            Console.WriteLine("\tdump\t\tPrints all variables in the cache");
+                            Console.WriteLine("\tsave <name>\tSaves the current function with the given name");
+                            if (_viewerAvail)
+                                Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
+                            Console.WriteLine("\teval\t\tEvaluates the function, also achieved by just pressing return");
+                            Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
+                            break;
+                        case "dump":
                             DumpVariables(ctx);
-                            Console.WriteLine($"Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
-                        } else PrintResult(func, func.Evaluate(ctx), ctx);
-                        break;
+                            break;
+                        case "save":
+                            var path = Path.Combine(dir, cmds[1] + Ext);
+                            File.WriteAllText(path, f);
+                            Console.WriteLine($"Function saved as {cmds[1]}");
+                            break;
+                        case "clear":
+                            ctx.var.Clear();
+                            break;
+                        case "graph":
+                            if (vars.Count != 1)
+                                Console.WriteLine("Error: Requires exactly 1 variable");
+                            else Process.Start(_viewer, f).WaitForExit();
+                            break;
+                        case "eval" or "":
+                            List<string> missing = new();
+                            foreach (var var in vars)
+                                if (!ctx.var.ContainsKey(var))
+                                    missing.Add(var);
+                            if (missing.Count > 0)
+                            {
+                                DumpVariables(ctx);
+                                Console.WriteLine($"Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
+                            } else PrintResult(func, func.Evaluate(ctx), ctx);
+                            break;
+                    }
                 }
             }
         }
