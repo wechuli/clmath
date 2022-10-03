@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
 
@@ -6,6 +7,8 @@ namespace clmath;
 
 public static class Program
 {
+    private static bool _exiting;
+    
     public static void Main(string[] args)
     {
         if (args.Length == 0)
@@ -15,14 +18,21 @@ public static class Program
 
     private static void StdIoMode()
     {
-        while (true)
+        while (!_exiting)
         {
             Console.Write("func> ");
             var func = Console.ReadLine()!;
 
             switch (func)
             {
+                case "": break;
                 case "exit": return;
+                case "help":
+                    Console.WriteLine("Available commands:");
+                    Console.WriteLine("\thelp\tShows this text");
+                    Console.WriteLine("\texit\tCloses the program");
+                    Console.WriteLine("\nEnter a function to start evaluating");
+                    break;
                 default:
                     EvalFunc(func);
                     break;
@@ -46,34 +56,63 @@ public static class Program
             PrintResult(func, res);
         }
         else
-        { // obtain vars
+        { // enter editor mode
             var ctx = new MathContext();
-            int i = 0;
-            while (i < vars.Count)
+            while (true)
             {
-                Console.Write($"input {vars[i]}> ");
-                var val = double.Parse(Console.ReadLine()!);
-                ctx.var[vars[i]] = val;
-                i++;
-            }
+                Console.Write($"{func}> ");
+                var cmd = Console.ReadLine()!;
 
-            var res = func.Evaluate(ctx);
-            PrintResult(func, res, ctx);
+                if (Regex.Match(cmd, "([\\w])+\\s*=\\s*([\\d.,]+)") is { Success: true } matcher)
+                    ctx.var[matcher.Groups[1].Value] = double.Parse(matcher.Groups[2].Value);
+                else switch (cmd)
+                {
+                    case "drop": return;
+                    case "exit":
+                        _exiting = true;
+                        return;
+                    case "help":
+                        Console.WriteLine("Available commands:");
+                        Console.WriteLine("\thelp\tShows this text");
+                        Console.WriteLine("\texit\tCloses the program");
+                        Console.WriteLine("\tdrop\tDrops the current function");
+                        Console.WriteLine("\tclear\tClears all variables from the cache");
+                        Console.WriteLine("\tdump\tPrints all variables in the cache");
+                        Console.WriteLine("\teval\tEvaluates the function, also achieved by just pressing return");
+                        Console.WriteLine("\nSet variables with an equation (example: 'x = 5')"); // todo: support sub-equations
+                        break;
+                    case "dump":
+                        DumpVariables(ctx);
+                        break;
+                    case "clear":
+                        ctx.var.Clear();
+                        break;
+                    case "eval" or "":
+                        List<string> missing = new();
+                        foreach (var var in vars)
+                            if (!ctx.var.ContainsKey(var))
+                                missing.Add(var);
+                        if (missing.Count > 0)
+                        {
+                            DumpVariables(ctx);
+                            Console.WriteLine($"Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
+                        } else PrintResult(func, func.Evaluate(ctx), ctx);
+                        break;
+                }
+            }
         }
+    }
+
+    private static void DumpVariables(this MathContext ctx)
+    {
+        foreach (var (key, val) in ctx.var)
+            Console.WriteLine($"\t{key} = {val}");
     }
 
     private static void PrintResult(Component func, double res, MathContext? ctx = null)
     {
-        if (ctx == null) // simple x = y
-            Console.WriteLine($"\t{func} = {res}");
-        else
-        { // print with values
-            Console.WriteLine($"\t{func}");
-            Console.WriteLine("where");
-            foreach (var (key, val) in ctx.var)
-                Console.WriteLine($"\t{key} = {val}");
-            Console.WriteLine($" = {res}");
-        }
+        ctx?.DumpVariables();
+        Console.WriteLine($"\t{func} = {res}");
     }
 }
 

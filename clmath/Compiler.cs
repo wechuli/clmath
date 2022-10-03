@@ -48,6 +48,7 @@ public class MathCompiler : MathBaseVisitor<Component>
             MathLexer.OP_MUL => Component.Operator.Multiply,
             MathLexer.OP_DIV => Component.Operator.Divide,
             MathLexer.OP_MOD => Component.Operator.Modulus,
+            MathLexer.POW => Component.Operator.Power,
             _ => throw new NotSupportedException(context.op().GetText())
         },
         x = Visit(context.l),
@@ -137,6 +138,8 @@ public sealed class Component
                         return x!.Value / y!.Value;
                     case Operator.Modulus:
                         return x!.Value % y!.Value;
+                    case Operator.Power:
+                        return Math.Pow(x!.Value, y!.Value);
                     case null: throw new Exception("invalid state");
                 }
                 break;
@@ -166,9 +169,10 @@ public sealed class Component
                     Operator.Multiply => '*',
                     Operator.Divide => '/', 
                     Operator.Modulus => '%',
+                    Operator.Power => '^',
                     _ => throw new ArgumentOutOfRangeException()
                 };
-                return $"{x} {op} {y}";
+                return $"{x}{op}{y}";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
@@ -205,6 +209,7 @@ public sealed class Component
         Subtract,
         Multiply,
         Divide,
-        Modulus
+        Modulus,
+        Power
     }
 }
