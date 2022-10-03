@@ -60,28 +60,49 @@ public static class Program
                     Console.WriteLine("Available commands:");
                     Console.WriteLine("\thelp\t\tShows this text");
                     Console.WriteLine("\texit\t\tCloses the program");
+                    Console.WriteLine("\tlist\t\tLists all loadable functions");
                     Console.WriteLine("\tload <name>\tLoads function with the given name");
+                    Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
+                    Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
-                case "load":
-                    if (cmds.Length == 1)
+                case "list":
+                    var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
+                    if (funcs.Length == 0) 
+                        Console.WriteLine("No saved functions");
+                    else
                     {
-                        var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
-                        if (funcs.Length == 0) 
-                            Console.WriteLine("No saved functions");
-                        else
-                        {
-                            Console.WriteLine("Available functions:");
-                            foreach (var file in funcs)
-                                Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length-Ext.Length)}");
-                        }
-                    } else
-                    {
-                        var path = Path.Combine(dir, cmds[1] + Ext);
-                        if (!File.Exists(path))
-                            Console.WriteLine($"Function with name {cmds[1]} not found");
-                        else EvalFunc(File.ReadAllText(path));
+                        Console.WriteLine("Available functions:");
+                        foreach (var file in funcs)
+                            Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length-Ext.Length)}");
                     }
+                    break;
+                case "load":
+                    if (CheckArgumentCount(cmds, 2))
+                        break;
+                    var path = Path.Combine(dir, cmds[1] + Ext);
+                    if (!File.Exists(path))
+                        Console.WriteLine($"Function with name {cmds[1]} not found");
+                    else EvalFunc(File.ReadAllText(path));
+                    break;
+                case "mv" or "rename":
+                    if (CheckArgumentCount(cmds, 3))
+                        break;
+                    var path1 = Path.Combine(dir, cmds[1] + Ext);
+                    var path2 = Path.Combine(dir, cmds[2] + Ext);
+                    if (!File.Exists(path1))
+                        Console.WriteLine($"Function with name {cmds[1]} not found");
+                    else File.Move(path1, path2);
+                    break;
+                case "delete":
+                    if (CheckArgumentCount(cmds, 2))
+                        break;
+                    var path0 = Path.Combine(dir, cmds[1] + Ext);
+                    if (File.Exists(path0))
+                    {
+                        File.Delete(path0);
+                        Console.WriteLine($"Function with name {cmds[1]} deleted");
+                    } else Console.WriteLine($"Function with name {cmds[1]} not found");
                     break;
                 default:
                     EvalFunc(func);
@@ -89,6 +110,16 @@ public static class Program
             }
         }
     }
+
+    private static bool CheckArgumentCount(string[] arr, int min)
+    {
+        if (arr.Length < min)
+        {
+            Console.WriteLine("Error: Not enough arguments");
+            return true;
+        }
+        return false;
+    } 
 
     public static Component ParseFunc(string f)
     {
@@ -153,6 +184,8 @@ public static class Program
                             DumpVariables(ctx);
                             break;
                         case "save":
+                            if (CheckArgumentCount(cmds, 2))
+                                break;
                             var path = Path.Combine(dir, cmds[1] + Ext);
                             File.WriteAllText(path, f);
                             Console.WriteLine($"Function saved as {cmds[1]}");
