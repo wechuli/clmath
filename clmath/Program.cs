@@ -68,7 +68,13 @@ public static class Program
                 var cmd = Console.ReadLine()!;
 
                 if (Regex.Match(cmd, "([\\w])+\\s*=\\s*(.+)") is { Success: true } matcher)
-                    ctx.var[matcher.Groups[1].Value] = ParseFunc(matcher.Groups[2].Value);
+                {
+                    var key = matcher.Groups[1].Value;
+                    var sub = ParseFunc(matcher.Groups[2].Value);
+                    if (sub.EnumerateVars().Contains(key))
+                        Console.WriteLine($"Error: Variable {key} cannot use itself");
+                    else ctx.var[key] = sub;
+                }
                 else switch (cmd)
                 {
                     case "drop": return;
