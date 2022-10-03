@@ -6,6 +6,18 @@
         <RootNamespace>clmath.viewer</RootNamespace>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
+        <PackageVersion>0.0.0</PackageVersion>
+        <Title>clmath-viewer</Title>
+        <Authors>comroid</Authors>
+        <Description>Graph viewer for clmath </Description>
+        <PackageProjectUrl>https://github.com/comroid-git/clmath</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/comroid-git/clmath/blob/master/LICENSE</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/comroid-git/clmath</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Company>comroid</Company>
+        <AssemblyVersion>0.0.0</AssemblyVersion>
+        <FileVersion>0</FileVersion>
+        <NeutralLanguage>en-150</NeutralLanguage>
     </PropertyGroup>
 
     <ItemGroup>
