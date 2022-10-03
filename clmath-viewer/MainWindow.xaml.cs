@@ -67,7 +67,7 @@ namespace clmath.viewer
             // x < 0 curve
             gl.Begin(BeginMode.Lines);
             gl.Color(0xFF, 0x00, 0x00);
-            for (x.arg = (double)0; (double)x.arg < lim; x.arg = (double)x.arg - res)
+            for (x.arg = (double)0; (double)x.arg > lim; x.arg = (double)x.arg - res)
             {
                 var y = fx.Evaluate(ctx);
                 gl.Vertex((double)x.arg, y);
