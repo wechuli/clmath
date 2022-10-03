@@ -88,7 +88,7 @@ public sealed class Component
             case Type.Num:
                 return (double)arg!;
             case Type.Var:
-                return ctx!.var[(string)arg!];
+                return ctx!.var[(string)arg!].Evaluate(ctx);
             case Type.FuncX:
                 switch (func)
                 {

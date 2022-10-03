@@ -40,14 +40,18 @@ public static class Program
         }
     }
 
-    private static void EvalFunc(string f)
+    private static Component ParseFunc(string f)
     {
         var input = new AntlrInputStream(f);
         var lexer = new MathLexer(input);
         var tokens = new CommonTokenStream(lexer);
         var parser = new MathParser(tokens);
-        var func = new MathCompiler().Visit(parser.expr());
+        return new MathCompiler().Visit(parser.expr());
+    }
 
+    private static void EvalFunc(string f)
+    {
+        var func = ParseFunc(f);
         var vars = func.EnumerateVars().Distinct().ToImmutableList();
 
         if (vars.Count == 0)
@@ -63,8 +67,8 @@ public static class Program
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
 
-                if (Regex.Match(cmd, "([\\w])+\\s*=\\s*([\\d.,]+)") is { Success: true } matcher)
-                    ctx.var[matcher.Groups[1].Value] = double.Parse(matcher.Groups[2].Value);
+                if (Regex.Match(cmd, "([\\w])+\\s*=\\s*(.+)") is { Success: true } matcher)
+                    ctx.var[matcher.Groups[1].Value] = ParseFunc(matcher.Groups[2].Value);
                 else switch (cmd)
                 {
                     case "drop": return;
@@ -79,7 +83,7 @@ public static class Program
                         Console.WriteLine("\tclear\tClears all variables from the cache");
                         Console.WriteLine("\tdump\tPrints all variables in the cache");
                         Console.WriteLine("\teval\tEvaluates the function, also achieved by just pressing return");
-                        Console.WriteLine("\nSet variables with an equation (example: 'x = 5')"); // todo: support sub-equations
+                        Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                         break;
                     case "dump":
                         DumpVariables(ctx);
@@ -116,7 +120,7 @@ public static class Program
     }
 }
 
-public class MathContext
+public sealed class MathContext
 {
-    public readonly Dictionary<string, double> var = new();
+    public readonly Dictionary<string, Component> var = new();
 }
