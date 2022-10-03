@@ -148,7 +148,7 @@ public static class Program
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
 
-                if (Regex.Match(cmd, "([\\w])+\\s*=\\s*(.+)") is { Success: true } matcher)
+                if (Regex.Match(cmd, "([\\w]+)\\s*=\\s*(.+)") is { Success: true } matcher)
                 {
                     var key = matcher.Groups[1].Value; 
                     var sub = ParseFunc(matcher.Groups[2].Value);
