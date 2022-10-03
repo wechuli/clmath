@@ -18,7 +18,7 @@ ARCSIN: 'a' 'rc'? SIN;
 ARCCOS: 'a' 'rc'? COS;
 ARCTAN: 'a' 'rc'? TAN;
 
-FUNC
+func
     : SIN
     | COS
     | TAN
@@ -53,7 +53,7 @@ WS: [ \n\r\t] -> channel(HIDDEN);
 parExpr: PAR_L n=expr PAR_R;
 idxExpr: IDX_L n=expr IDX_R;
 
-OP
+op
     : OP_ADD
     | OP_SUB
     | OP_MUL
@@ -64,12 +64,12 @@ OP
 
 // functions
 frac: FRAC x=parExpr y=parExpr;
-fx: FUNC x=parExpr;
+fx: func x=parExpr;
 root: ROOT i=idxExpr? x=parExpr;
 
 // expressions
 expr
-    : l=expr OP r=expr  #exprOp
+    : l=expr op r=expr  #exprOp
     | frac              #exprFrac
     | fx                #exprFunc
     | root              #exprRoot
