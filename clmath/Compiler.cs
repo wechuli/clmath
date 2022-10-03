@@ -122,7 +122,8 @@ public sealed class Component
                 }
                 break;
             case Type.Root:
-                return Math.Pow(y ?? 2, 1 / x!.Value);
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                return Math.Pow(x!.Value, 1 / (y ?? 2d));
             case Type.Frac:
                 return x!.Value / y!.Value;
             case Type.Op:
