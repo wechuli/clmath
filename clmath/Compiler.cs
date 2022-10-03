@@ -88,6 +88,8 @@ public sealed class Component
             case Type.Num:
                 return (double)arg!;
             case Type.Var:
+                if (Program.constants.TryGetValue((string)arg!, out var val))
+                    return val;
                 return ctx!.var[(string)arg!].Evaluate(ctx);
             case Type.FuncX:
                 switch (func)

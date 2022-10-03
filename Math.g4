@@ -33,7 +33,6 @@ func
 ;
 
 ROOT: 'sqrt' | 'root';
-PI: 'pi';
 POW: '^';
 FRAC: 'frac';
 

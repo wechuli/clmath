@@ -15,6 +15,13 @@ public static class Program
     private static bool _viewerAvail;
     private static string _viewer = null!;
 
+    internal static readonly Dictionary<string, double> constants = new()
+    {
+        { "pi", Math.PI },
+        { "e", Math.E },
+        { "tau", Math.Tau }
+    };
+
     static Program()
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -112,10 +119,12 @@ public static class Program
 
                 if (Regex.Match(cmd, "([\\w])+\\s*=\\s*(.+)") is { Success: true } matcher)
                 {
-                    var key = matcher.Groups[1].Value;
+                    var key = matcher.Groups[1].Value; 
                     var sub = ParseFunc(matcher.Groups[2].Value);
                     if (sub.EnumerateVars().Contains(key))
                         Console.WriteLine($"Error: Variable {key} cannot use itself");
+                    else if (constants.ContainsKey(key))
+                        Console.WriteLine($"Error: Cannot redefine {key}");
                     else ctx.var[key] = sub;
                 }
                 else
@@ -161,6 +170,7 @@ public static class Program
                             foreach (var var in vars)
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
+                            missing.RemoveAll(constants.ContainsKey);
                             if (missing.Count > 0)
                             {
                                 DumpVariables(ctx);
