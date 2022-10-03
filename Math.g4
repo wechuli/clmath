@@ -34,6 +34,7 @@ func
 
 ROOT: 'sqrt' | 'root';
 POW: '^';
+FACTORIAL: '!';
 FRAC: 'frac';
 
 PAR_L: '(';
@@ -72,6 +73,7 @@ expr
     | parExpr           #exprPar
     | frac              #exprFrac
     | fx                #exprFunc
+    | x=expr FACTORIAL  #exprFact
     | root              #exprRoot
     | num               #exprNum
     | word              #exprId

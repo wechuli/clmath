@@ -35,6 +35,8 @@ public class MathCompiler : MathBaseVisitor<Component>
         x = Visit(context.x)
     };
 
+    public override Component VisitExprFact(MathParser.ExprFactContext context) => new(){type = Component.Type.Factorial, x = Visit(context.x)};
+
     public override Component VisitRoot(MathParser.RootContext context) => new()
         { type = Component.Type.Root, x = Visit(context.x), y = Visit(context.i) };
 
@@ -123,6 +125,11 @@ public sealed class Component
                     case null: throw new Exception("invalid state");
                 }
                 break;
+            case Type.Factorial:
+                int yield = 1;
+                for (int rem = (int)x!.Value; rem > 0; rem--)
+                    yield *= rem;
+                return yield;
             case Type.Root:
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
                 return Math.Pow(x!.Value, 1 / (y ?? 2d));
@@ -160,6 +167,8 @@ public sealed class Component
                 return arg!.ToString()!;
             case Type.FuncX:
                 return $"{func.ToString()!.ToLower()}({x})";
+            case Type.Factorial:
+                return $"{x}!";
             case Type.Root:
                 var n = y?.ToString() ?? "2";
                 return $"{(n == "2" ? "sqrt" : $"root[{n}]")}({x})";
@@ -187,6 +196,7 @@ public sealed class Component
         Num,
         Var,
         FuncX,
+        Factorial,
         Root,
         Frac,
         Op
