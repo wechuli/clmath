@@ -1,102 +1,83 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
-using SharpGL;
-using SharpGL.Enumerations;
-using SharpGL.SceneGraph;
-using SharpGL.WPF;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace clmath.viewer
 {
     public partial class MainWindow : Window
     {
-        public const float lim = 1000;
-        public const float res = 0.1f;
+        public const float res = 1.0f;
         public readonly Component fx;
-        private int scaleX = 1;
-        private int scaleY = 1;
+        private int scaleX = 100;
+        private int scaleY = 100;
         private MathContext ctx;
         private Component x;
         
         public MainWindow()
         {
             DataContext = this;
-            InitializeComponent();
             fx = Program.ParseFunc(App.Func);
             ctx = new MathContext();
             var key = fx.EnumerateVars()[0];
             ctx.var[key] = x = new Component() { type = Component.Type.Num, arg = (double)0 };
+
+            InitializeComponent();
+            DrawGraph();
         }
 
-        private void Initialize(object sender, OpenGLRoutedEventArgs args)
+        private void DrawGraph()
         {
-        }
-
-        private void Draw(object sender, OpenGLRoutedEventArgs args)
-        {
-            var gl = args.OpenGL;
-
-            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-            gl.LoadIdentity();
-            gl.LineWidth(0.1f);
-
-            gl.Color(0xFF, 0xFF, 0xFF);
-
-            // y axis
-            gl.Begin(BeginMode.Lines);
-            gl.Vertex(-lim, 0);
-            gl.Vertex(lim, 0);
-            gl.End();
-
-            // x axis
-            gl.Begin(BeginMode.Lines);
-            gl.Vertex(0, -lim);
-            gl.Vertex(0, lim);
-            gl.End();
-
-            // x > 0 curve
-            gl.Begin(BeginMode.Lines);
-            gl.Color(0xFF, 0x00, 0x00);
-            for (x.arg = (double)0; (double)x.arg < lim; x.arg = (double)x.arg + res)
-            {
-                var y = fx.Evaluate(ctx);
-                gl.Vertex((double)x.arg, y);
-            }
-            gl.End();
+            Graph.Children.Clear();
+            var xc = Width / 2;
+            var yc = Height / 2;
             
-            // x < 0 curve
-            gl.Begin(BeginMode.Lines);
-            gl.Color(0xFF, 0x00, 0x00);
-            for (x.arg = (double)0; (double)x.arg < lim; x.arg = (double)x.arg - res)
+            // x axis
+            Graph.Children.Add(new Line()
+            {
+                Stroke = Brushes.Azure,
+                X1 = 0,
+                Y1 = yc,
+                X2 = Width,
+                Y2 = yc
+            });
+            
+            // y axis
+            Graph.Children.Add(new Line()
+            {
+                Stroke = Brushes.Azure,
+                X1 = xc,
+                Y1 = 0,
+                X2 = xc,
+                Y2 = Height
+            });
+
+            double px, py = px = -Width - Width;
+            for (x.arg = -xc; (double)x.arg < Width; x.arg = (double)x.arg + res)
             {
                 var y = fx.Evaluate(ctx);
-                gl.Vertex((double)x.arg, y);
+                Graph.Children.Add(new Line()
+                {
+                    Stroke = Brushes.Red,
+                    X1 = px * scaleX + xc,
+                    Y1 = py * scaleY + yc,
+                    X2 = (double)x.arg * scaleX + xc,
+                    Y2 = y * scaleY + yc
+                });
+                px = (double)x.arg;
+                py = y;
             }
-            gl.End();
-
-            gl.Flush();
         }
 
-        private void MouseHandler(object sender, MouseEventArgs e)
+        private void MainWindow_OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
+            DrawGraph();
         }
 
-        private void ClickHandler(object sender, MouseButtonEventArgs e)
+        private void MainWindow_OnMouseWheel(object sender, MouseWheelEventArgs e)
         {
-        }
-
-        private void KeyDownHandler(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape)
-                Application.Current.Shutdown(0);
-            if (e.Key == Key.NumPad4)
-                scaleX += 1;
-            if (e.Key == Key.NumPad1)
-                scaleX -= 1;
-            if (e.Key == Key.NumPad5)
-                scaleY += 1;
-            if (e.Key == Key.NumPad2)
-                scaleY -= 1;
         }
     }
 }

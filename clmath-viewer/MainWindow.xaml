@@ -3,8 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:ogl="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <ogl:OpenGLControl OpenGLInitialized="Initialize" OpenGLDraw="Draw" DrawFPS="True" KeyDown="KeyDownHandler" MouseMove="MouseHandler" MouseDown="ClickHandler" />
+        Title="2D Graph" Height="600" Width="1200" SizeChanged="MainWindow_OnSizeChanged" MouseWheel="MainWindow_OnMouseWheel">
+    <Canvas Name="Graph" Background="Black" />
 </Window>
