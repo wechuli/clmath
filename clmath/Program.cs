@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
@@ -8,9 +9,13 @@ namespace clmath;
 public static class Program
 {
     private static bool _exiting;
-    
+    private static bool _viewerAvail;
+    private static string _viewer = null!;
+
     public static void Main(string[] args)
     {
+        _viewer = Path.Combine(Directory.GetParent(typeof(Program).Assembly.Location)!.FullName, "clmath-viewer.exe");
+        _viewerAvail = File.Exists(_viewer);
         if (args.Length == 0)
             StdIoMode();
         else EvalFunc(string.Join(" ", args));
@@ -40,7 +45,7 @@ public static class Program
         }
     }
 
-    private static Component ParseFunc(string f)
+    public static Component ParseFunc(string f)
     {
         var input = new AntlrInputStream(f);
         var lexer = new MathLexer(input);
@@ -88,6 +93,8 @@ public static class Program
                         Console.WriteLine("\tdrop\tDrops the current function");
                         Console.WriteLine("\tclear\tClears all variables from the cache");
                         Console.WriteLine("\tdump\tPrints all variables in the cache");
+                        if (_viewerAvail)
+                            Console.WriteLine("\tgraph\tDisplays the function in a 2D graph");
                         Console.WriteLine("\teval\tEvaluates the function, also achieved by just pressing return");
                         Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                         break;
@@ -96,6 +103,11 @@ public static class Program
                         break;
                     case "clear":
                         ctx.var.Clear();
+                        break;
+                    case "graph":
+                        if (vars.Count != 1)
+                            Console.WriteLine("Error: Requires exactly 1 variable");
+                        else Process.Start(_viewer, func.ToString()).WaitForExit();
                         break;
                     case "eval" or "":
                         List<string> missing = new();

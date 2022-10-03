@@ -67,7 +67,7 @@ public sealed class Component
     public Operator? op { get; init; }
     public Component? x { get; init; }
     public Component? y { get; init; }
-    public object? arg { get; init; }
+    public object? arg { get; set; }
 
     public List<string> EnumerateVars()
     {

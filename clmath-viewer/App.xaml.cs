@@ -8,10 +8,14 @@ using System.Windows;
 
 namespace clmath.viewer
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
+        public static string Func = null!;
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            Func = string.Join(" ", e.Args);
+            base.OnStartup(e);
+        }
     }
 }
