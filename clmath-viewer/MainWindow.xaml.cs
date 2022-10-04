@@ -37,10 +37,16 @@ namespace clmath.viewer
             var gl = args.OpenGL;
 
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-            gl.LoadIdentity();
-            gl.LineWidth(0.1f);
+            //gl.LoadIdentity();
+            gl.LineWidth(20f);
+            gl.PointSize(20f);
 
-            gl.Color(0xFF, 0xFF, 0xFF);
+            gl.Color(1.0, 1.0, 1.0);
+            
+            gl.Begin(BeginMode.Lines);
+            gl.Vertex(0,0);
+            gl.Vertex(Graph.ActualWidth, Graph.ActualHeight);
+            gl.End();
 
             // y axis
             gl.Begin(BeginMode.Lines);
@@ -56,7 +62,7 @@ namespace clmath.viewer
 
             // x > 0 curve
             gl.Begin(BeginMode.Lines);
-            gl.Color(0xFF, 0x00, 0x00);
+            gl.Color(1.0, 0.0, 0.0);
             for (x.arg = (double)0; (double)x.arg < lim; x.arg = (double)x.arg + res)
             {
                 var y = fx.Evaluate(ctx);
@@ -66,7 +72,6 @@ namespace clmath.viewer
             
             // x < 0 curve
             gl.Begin(BeginMode.Lines);
-            gl.Color(0xFF, 0x00, 0x00);
             for (x.arg = (double)0; (double)x.arg > lim; x.arg = (double)x.arg - res)
             {
                 var y = fx.Evaluate(ctx);
