@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
 using SharpGL;
@@ -30,6 +31,7 @@ namespace clmath.viewer
 
         private void Initialize(object sender, OpenGLRoutedEventArgs args)
         {
+            var gl = args.OpenGL;
         }
 
         private void Draw(object sender, OpenGLRoutedEventArgs args)
@@ -78,6 +80,22 @@ namespace clmath.viewer
                 gl.Vertex((double)x.arg, y);
             }
             gl.End();
+
+            for (int i = 0; i < 500; i++)
+            {
+                gl.Begin(BeginMode.TriangleFan);
+                var Segments = 50;
+                var radius = 10;
+                var Position = new Vector2(i, i);
+                for (var a = 0; a < Segments; a++)
+                {
+                    float theta = 2f * MathF.PI * a / Segments;
+                    float x = radius * MathF.Sin(theta);
+                    float y = radius * MathF.Cos(theta);
+                    gl.Vertex(Position.X + x, Position.Y + y);
+                }
+                gl.End();   
+            }
 
             gl.Flush();
         }
