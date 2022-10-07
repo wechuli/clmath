@@ -11,7 +11,7 @@ namespace clmath.viewer
     {
         public const float res = 1.0f;
         public readonly Component fx;
-        private int scaleX = 100;
+        private int scaleX = 75;
         private int scaleY = 100;
         private MathContext ctx;
         private Component x;
@@ -55,9 +55,9 @@ namespace clmath.viewer
             });
 
             double px, py = px = -Width - Width;
-            for (x.arg = -xc; (double)x.arg < Width; x.arg = (double)x.arg + res)
+            for (x.arg = -xc; (double)x.arg < Width; x.arg = (double)x.arg + res / Math.Sqrt(scaleX) * 2.5)
             {
-                var y = fx.Evaluate(ctx);
+                var y = fx.Evaluate(ctx) * -1;
                 Graph.Children.Add(new Line()
                 {
                     Stroke = Brushes.Red,
