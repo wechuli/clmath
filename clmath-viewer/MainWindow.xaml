@@ -4,6 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="2D Graph" Height="600" Width="1200" SizeChanged="MainWindow_OnSizeChanged" MouseWheel="MainWindow_OnMouseWheel">
+        Title="2D Graph" Height="600" Width="1200" ResizeMode="NoResize" SizeChanged="MainWindow_OnSizeChanged" MouseWheel="MainWindow_OnMouseWheel">
     <Canvas Name="Graph" Background="Black" />
 </Window>
