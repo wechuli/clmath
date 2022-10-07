@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
+using Silk.NET.Windowing;
 
 namespace clmath;
 
@@ -12,8 +13,7 @@ public static class Program
     private static readonly string Ext = ".math";
     private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "comroid", "clmath");
     private static bool _exiting;
-    private static bool _viewerAvail;
-    private static string _viewer = null!;
+    private static GraphWindow? _graph;
 
     internal static readonly Dictionary<string, double> constants = new()
     {
@@ -31,8 +31,6 @@ public static class Program
     
     public static void Main(string[] args)
     {
-        _viewer = Path.Combine(Directory.GetParent(typeof(Program).Assembly.Location)!.FullName, "clmath-viewer.exe");
-        _viewerAvail = File.Exists(_viewer);
         if (args.Length == 0)
             StdIoMode();
         else
@@ -161,6 +159,7 @@ public static class Program
                 else
                 {
                     var cmds = cmd.Split(" ");
+                    List<string> missing;
                     switch (cmds[0])
                     {
                         case "drop": return;
@@ -175,8 +174,7 @@ public static class Program
                             Console.WriteLine("\tclear\t\tClears all variables from the cache");
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
                             Console.WriteLine("\tsave <name>\tSaves the current function with the given name");
-                            if (_viewerAvail)
-                                Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
+                            Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
                             Console.WriteLine("\teval\t\tEvaluates the function, also achieved by just pressing return");
                             Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                             break;
@@ -194,12 +192,17 @@ public static class Program
                             ctx.var.Clear();
                             break;
                         case "graph":
-                            if (vars.Count != 1)
+                            missing = new();
+                            foreach (var var in vars)
+                                if (!ctx.var.ContainsKey(var))
+                                    missing.Add(var);
+                            missing.RemoveAll(constants.ContainsKey);
+                            if (missing.Count != 1)
                                 Console.WriteLine("Error: Requires exactly 1 variable");
-                            else Process.Start(_viewer, f).WaitForExit();
+                            StartGraph();
                             break;
                         case "eval" or "":
-                            List<string> missing = new();
+                            missing = new();
                             foreach (var var in vars)
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
@@ -214,6 +217,12 @@ public static class Program
                 }
             }
         }
+    }
+
+    private static void StartGraph(Component func)
+    {
+        _graph?.Dispose();
+        _graph = new GraphWindow(func);
     }
 
     private static void DumpVariables(this MathContext ctx)

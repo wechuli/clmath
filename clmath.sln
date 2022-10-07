@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clmath", "clmath\clmath.csproj", "{86E4E950-C223-4F31-A27F-B24E384FAE0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clmath-viewer", "clmath-viewer\clmath-viewer.csproj", "{75032FF7-B15D-4531-A68D-01B7A79166C4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,9 +12,5 @@ Global
 		{86E4E950-C223-4F31-A27F-B24E384FAE0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86E4E950-C223-4F31-A27F-B24E384FAE0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86E4E950-C223-4F31-A27F-B24E384FAE0E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{75032FF7-B15D-4531-A68D-01B7A79166C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{75032FF7-B15D-4531-A68D-01B7A79166C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{75032FF7-B15D-4531-A68D-01B7A79166C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{75032FF7-B15D-4531-A68D-01B7A79166C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
