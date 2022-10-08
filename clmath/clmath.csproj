@@ -16,10 +16,19 @@
         <AssemblyVersion>0.9.0</AssemblyVersion>
         <FileVersion>10</FileVersion>
         <NeutralLanguage>en-150</NeutralLanguage>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.11.1" />
+      <PackageReference Include="Silk.NET.OpenGL" Version="2.16.0" />
+      <PackageReference Include="Silk.NET.Windowing" Version="2.16.0" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="Assets\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>
