@@ -102,10 +102,10 @@ public sealed class GraphWindow : IDisposable
             gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(axies_verts.Length * sizeof(double)), ax_vtx_ptr, GLEnum.StaticDraw);
         
         gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ax_ebo);
-        fixed(uint* ax_vtx_ptr = &axies_indices[0])
-            gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(axies_indices.Length * sizeof(uint)), ax_vtx_ptr, GLEnum.StaticDraw);
+        fixed(uint* ax_idx_ptr = &axies_indices[0])
+            gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(axies_indices.Length * sizeof(uint)), ax_idx_ptr, GLEnum.StaticDraw);
         
-        gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 1, null);
+        gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 0, null);
         gl.EnableVertexAttribArray(0);
 
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
@@ -119,7 +119,8 @@ public sealed class GraphWindow : IDisposable
         
         gl.UseProgram(shaders);
         gl.BindVertexArray(ax_vao);
-        gl.DrawElements(PrimitiveType.Lines, 2, DrawElementsType.UnsignedInt, 0);
+        gl.DrawArrays(PrimitiveType.Lines, 0, 2);
+        //gl.DrawElements(PrimitiveType.Lines, 4, DrawElementsType.UnsignedInt, 0);
         
         gl.Flush();
     }
