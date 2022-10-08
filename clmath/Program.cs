@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
-using Silk.NET.Windowing;
 
 namespace clmath;
 
@@ -199,7 +198,7 @@ public static class Program
                             missing.RemoveAll(constants.ContainsKey);
                             if (missing.Count != 1)
                                 Console.WriteLine("Error: Requires exactly 1 variable");
-                            StartGraph();
+                            StartGraph(func);
                             break;
                         case "eval" or "":
                             missing = new();
