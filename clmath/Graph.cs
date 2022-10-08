@@ -11,7 +11,7 @@ namespace clmath;
 public sealed class GraphWindow : IDisposable
 {
     private static readonly DirectoryInfo AssemblyDir;
-    private const int maxFuncs = 7;
+    private const int maxFuncs = 6;
     private readonly MathContext[] ctx;
     private double scaleX = 3.5;
     private double scaleY = 1.5;
@@ -29,10 +29,14 @@ public sealed class GraphWindow : IDisposable
     public GraphWindow(params Component[] fx)
     {
         if (fx.Length > maxFuncs)
-            throw new Exception("Invalid amount of functions");
-        
+        {
+            Console.WriteLine($"Error: Cannot display more than {maxFuncs} functions");
+            return;
+        }
+
         this.fx = fx.ToList();
         this.window = Window.Create(WindowOptions.Default);
+        window.Title = "2D Graph";
 
         var fxn = fx.Length;
         ctx = new MathContext[fxn];
@@ -50,6 +54,7 @@ public sealed class GraphWindow : IDisposable
         window.Load += Load;
         window.FramebufferResize += Resize;
         window.Render += Render;
+        window.Closing += Dispose;
         window.Run();
     }
 
@@ -211,7 +216,7 @@ public sealed class GraphWindow : IDisposable
                 case 5:
                     gl.ColorMask(false, true, true, true);
                     break;
-                case 6:
+                default:
                     gl.ColorMask(true, true, true, true);
                     break;
             }

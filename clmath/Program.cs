@@ -66,6 +66,7 @@ public static class Program
                     Console.WriteLine("\tload <name>\tLoads function with the given name");
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
                     Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
+                    Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
                 case "list":
@@ -105,6 +106,9 @@ public static class Program
                         File.Delete(path0);
                         Console.WriteLine($"Function with name {cmds[1]} deleted");
                     } else Console.WriteLine($"Function with name {cmds[1]} not found");
+                    break;
+                case "graph":
+                    StartGraph(cmds.ToList().GetRange(1, cmds.Length - 1).Select(ParseFunc).ToArray());
                     break;
                 default:
                     EvalFunc(func);
