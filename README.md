@@ -29,3 +29,5 @@ Function variables may be defined as constant values, a subordinate term or an e
 ##### Function Graph
 Functions that have exactly 1 variable can be displayed in a Graph using the `graph` command.
 When in the normal math shell, or launching through program arguments, the graph can display up to 6 different functions by using `graph <function_1> <function_2> <function_n>`.
+
+![Using the Graph](https://raw.githubusercontent.com/comroid-git/clmath/master/docs/graph_1.png)
