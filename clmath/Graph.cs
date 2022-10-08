@@ -101,7 +101,7 @@ public sealed class GraphWindow : IDisposable
         fixed(uint* ax_vtx_ptr = &axies_indices[0])
             gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(axies_indices.Length * sizeof(uint)), ax_vtx_ptr, GLEnum.StaticDraw);
         
-        gl.VertexAttribPointer(0, 4, VertexAttribPointerType.Double, false, 0, null);
+        gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 1, null);
         gl.EnableVertexAttribArray(0);
 
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
