@@ -168,7 +168,7 @@ public static class Program
 
     private static void EvalFunc(Component func, string? f = null)
     {
-        if (!func.EnumerateVars().Distinct().Any())
+        if (func.EnumerateVars().Distinct().All(constants.ContainsKey))
         {
             var res = func.Evaluate(null);
             PrintResult(func, res);
