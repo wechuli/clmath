@@ -27,12 +27,12 @@ public static class Program
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         if (!Directory.Exists(dir))
             Directory.CreateDirectory(dir);
+        _viewer = Path.Combine(Directory.GetParent(typeof(Program).Assembly.Location)!.FullName, "clmath-viewer.exe");
+        _viewerAvail = File.Exists(_viewer);
     }
     
     public static void Main(string[] args)
     {
-        _viewer = Path.Combine(Directory.GetParent(typeof(Program).Assembly.Location)!.FullName, "clmath-viewer.exe");
-        _viewerAvail = File.Exists(_viewer);
         if (args.Length == 0)
             StdIoMode();
         else
