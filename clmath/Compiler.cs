@@ -162,7 +162,7 @@ public sealed class Component
         List<string> vars = new();
         if (type == Type.Eval)
         {
-            Program.LoadFunc(arg!.ToString()!).EnumerateVars().ForEach(vars.Add);
+            Program.LoadFunc(arg!.ToString()!)?.EnumerateVars().ForEach(vars.Add);
             foreach (var arg in args)
                 vars.Add(arg.arg!.ToString()!);
         }
@@ -248,6 +248,8 @@ public sealed class Component
                 break;
             case Type.Eval:
                 var sub = Program.LoadFunc(arg!.ToString()!);
+                if (sub == null)
+                    return double.NaN;
                 var subCtx = new MathContext();
                 foreach (var (key, value) in ctx!.var)
                     subCtx.var[key] = value;
