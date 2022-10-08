@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Runtime.InteropServices;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
@@ -72,6 +73,9 @@ public sealed class GraphWindow : IDisposable
     private unsafe void Load()
     {
         gl = window.CreateOpenGL();
+        gl.Enable(EnableCap.DebugOutput);
+        gl.DebugMessageCallback((source, type, id, severity, length, message, param) 
+            => Console.WriteLine($"source:{source}\ntype:{type}\nid:{id}\nseverity:{severity}\nlength:{length}\nmsg:{Marshal.PtrToStringAnsi(message)}\n"), null);
         
         // shader loading
         var shd_vtx = gl.CreateShader(ShaderType.VertexShader);
@@ -88,8 +92,8 @@ public sealed class GraphWindow : IDisposable
         gl.DeleteShader(shd_frg);
         
         // graph-cross element
-        ax_vbo = gl.GenBuffer();
         ax_vao = gl.GenVertexArray();
+        ax_vbo = gl.GenBuffer();
         ax_ebo = gl.GenBuffer();
         gl.BindVertexArray(ax_vao);
 
