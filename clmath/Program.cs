@@ -35,7 +35,7 @@ public static class Program
         else
         {
             if (args[0] == "graph")
-                StartGraph(ParseFunc(args[1]));
+                StartGraph(args.ToList().GetRange(1, args.Length - 1).Select(ParseFunc).ToArray());
             else
             {
                 var arg = string.Join(" ", args);
@@ -223,7 +223,7 @@ public static class Program
         }
     }
 
-    private static void StartGraph(Component func)
+    private static void StartGraph(params Component[] func)
     {
         _graph?.Dispose();
         _graph = new GraphWindow(func);
