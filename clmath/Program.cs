@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
@@ -10,7 +8,10 @@ namespace clmath;
 public static class Program
 {
     private static readonly string Ext = ".math";
-    private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "comroid", "clmath");
+
+    private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "comroid", "clmath");
+
     private static bool _exiting;
     private static GraphWindow? _graph;
 
@@ -27,15 +28,19 @@ public static class Program
         if (!Directory.Exists(dir))
             Directory.CreateDirectory(dir);
     }
-    
+
     public static void Main(string[] args)
     {
         if (args.Length == 0)
+        {
             StdIoMode();
+        }
         else
         {
             if (args[0] == "graph")
+            {
                 StartGraph(args.ToList().GetRange(1, args.Length - 1).Select(ParseFunc).ToArray());
+            }
             else
             {
                 var arg = string.Join(" ", args);
@@ -71,14 +76,17 @@ public static class Program
                     break;
                 case "list":
                     var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
-                    if (funcs.Length == 0) 
+                    if (funcs.Length == 0)
+                    {
                         Console.WriteLine("No saved functions");
+                    }
                     else
                     {
                         Console.WriteLine("Available functions:");
                         foreach (var file in funcs)
-                            Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length-Ext.Length)}");
+                            Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length - Ext.Length)}");
                     }
+
                     break;
                 case "load":
                     if (!IsInvalidArgumentCount(cmds, 2))
@@ -101,7 +109,12 @@ public static class Program
                     {
                         File.Delete(path0);
                         Console.WriteLine($"Function with name {cmds[1]} deleted");
-                    } else Console.WriteLine($"Function with name {cmds[1]} not found");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Function with name {cmds[1]} not found");
+                    }
+
                     break;
                 case "graph":
                     StartGraph(cmds.ToList().GetRange(1, cmds.Length - 1).Select(ParseFunc).ToArray());
@@ -128,8 +141,9 @@ public static class Program
             Console.WriteLine("Error: Not enough arguments");
             return true;
         }
+
         return false;
-    } 
+    }
 
     public static Component ParseFunc(string f)
     {
@@ -140,8 +154,11 @@ public static class Program
         return new MathCompiler().Visit(parser.expr());
     }
 
-    private static void EvalFunc(string f) => EvalFunc(ParseFunc(f), f);
-    
+    private static void EvalFunc(string f)
+    {
+        EvalFunc(ParseFunc(f), f);
+    }
+
     private static void EvalFunc(Component func, string? f = null)
     {
         if (!func.EnumerateVars().Distinct().Any())
@@ -150,7 +167,8 @@ public static class Program
             PrintResult(func, res);
         }
         else
-        { // enter editor mode
+        {
+            // enter editor mode
             var ctx = new MathContext();
             while (true)
             {
@@ -159,7 +177,7 @@ public static class Program
 
                 if (Regex.Match(cmd, "([\\w]+)\\s*=\\s*(.+)") is { Success: true } matcher)
                 {
-                    var key = matcher.Groups[1].Value; 
+                    var key = matcher.Groups[1].Value;
                     var sub = ParseFunc(matcher.Groups[2].Value);
                     if (sub.EnumerateVars().Contains(key))
                         Console.WriteLine($"Error: Variable {key} cannot use itself");
@@ -186,7 +204,8 @@ public static class Program
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
                             Console.WriteLine("\tsave <name>\tSaves the current function with the given name");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
-                            Console.WriteLine("\teval\t\tEvaluates the function, also achieved by just pressing return");
+                            Console.WriteLine(
+                                "\teval\t\tEvaluates the function, also achieved by just pressing return");
                             Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                             break;
                         case "dump":
@@ -195,6 +214,11 @@ public static class Program
                         case "save":
                             if (IsInvalidArgumentCount(cmds, 2))
                                 break;
+                            if (f == null)
+                            {
+                                Console.WriteLine("Error: Cannot save loaded function");
+                                break;
+                            }
                             var path = Path.Combine(dir, cmds[1] + Ext);
                             File.WriteAllText(path, f);
                             Console.WriteLine($"Function saved as {cmds[1]}");
@@ -203,8 +227,9 @@ public static class Program
                             ctx.var.Clear();
                             break;
                         case "graph":
-                            missing = new();
-                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars()).Distinct())
+                            missing = new List<string>();
+                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars())
+                                         .Distinct())
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
                             missing.RemoveAll(constants.ContainsKey);
@@ -213,16 +238,23 @@ public static class Program
                             StartGraph(func);
                             break;
                         case "eval" or "":
-                            missing = new();
-                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars()).Distinct())
+                            missing = new List<string>();
+                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars())
+                                         .Distinct())
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
                             missing.RemoveAll(constants.ContainsKey);
                             if (missing.Count > 0)
                             {
                                 DumpVariables(ctx);
-                                Console.WriteLine($"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
-                            } else PrintResult(func, func.Evaluate(ctx), ctx);
+                                Console.WriteLine(
+                                    $"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
+                            }
+                            else
+                            {
+                                PrintResult(func, func.Evaluate(ctx), ctx);
+                            }
+
                             break;
                     }
                 }

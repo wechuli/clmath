@@ -5,79 +5,148 @@ namespace clmath;
 
 public class MathCompiler : MathBaseVisitor<Component>
 {
-    public override Component VisitNum(MathParser.NumContext context) =>
-        new() { type = Component.Type.Num, arg = double.Parse(context.GetText()) };
-
-    public override Component VisitWord(MathParser.WordContext context) =>
-        new() { type = Component.Type.Var, arg = context.GetText() };
-
-    public override Component VisitFrac(MathParser.FracContext context) => new()
-        { type = Component.Type.Frac, x = Visit(context.x), y = Visit(context.y) };
-
-    public override Component VisitFx(MathParser.FxContext context) => new()
+    public override Component VisitNum(MathParser.NumContext context)
     {
-        type = Component.Type.FuncX,
-        func = context.func().Start.Type switch
+        return new() { type = Component.Type.Num, arg = double.Parse(context.GetText()) };
+    }
+
+    public override Component VisitWord(MathParser.WordContext context)
+    {
+        return new() { type = Component.Type.Var, arg = context.GetText() };
+    }
+
+    public override Component VisitFrac(MathParser.FracContext context)
+    {
+        return new()
+            { type = Component.Type.Frac, x = Visit(context.x), y = Visit(context.y) };
+    }
+
+    public override Component VisitFx(MathParser.FxContext context)
+    {
+        return new()
         {
-            MathLexer.SIN => Component.FuncX.Sin,
-            MathLexer.COS => Component.FuncX.Cos,
-            MathLexer.TAN => Component.FuncX.Tan,
-            MathLexer.LOG => Component.FuncX.Log,
-            MathLexer.SEC => Component.FuncX.Sec,
-            MathLexer.CSC => Component.FuncX.Csc,
-            MathLexer.COT => Component.FuncX.Cot,
-            MathLexer.HYP => Component.FuncX.Hyp,
-            MathLexer.ARCSIN => Component.FuncX.ArcSin,
-            MathLexer.ARCCOS => Component.FuncX.ArcCos,
-            MathLexer.ARCTAN => Component.FuncX.ArcTan,
-            _ => throw new NotSupportedException(context.func().GetText())
-        },
-        x = Visit(context.x)
-    };
+            type = Component.Type.FuncX,
+            func = context.func().Start.Type switch
+            {
+                MathLexer.SIN => Component.FuncX.Sin,
+                MathLexer.COS => Component.FuncX.Cos,
+                MathLexer.TAN => Component.FuncX.Tan,
+                MathLexer.LOG => Component.FuncX.Log,
+                MathLexer.SEC => Component.FuncX.Sec,
+                MathLexer.CSC => Component.FuncX.Csc,
+                MathLexer.COT => Component.FuncX.Cot,
+                MathLexer.HYP => Component.FuncX.Hyp,
+                MathLexer.ARCSIN => Component.FuncX.ArcSin,
+                MathLexer.ARCCOS => Component.FuncX.ArcCos,
+                MathLexer.ARCTAN => Component.FuncX.ArcTan,
+                _ => throw new NotSupportedException(context.func().GetText())
+            },
+            x = Visit(context.x)
+        };
+    }
 
-    public override Component VisitExprFact(MathParser.ExprFactContext context) => new(){type = Component.Type.Factorial, x = Visit(context.x)};
-
-    public override Component VisitRoot(MathParser.RootContext context) => new()
-        { type = Component.Type.Root, x = Visit(context.x), y = Visit(context.i) };
-
-    public override Component VisitExprOp(MathParser.ExprOpContext context) => new()
+    public override Component VisitExprFact(MathParser.ExprFactContext context)
     {
-        type = Component.Type.Op,
-        op = context.op().Start.Type switch
+        return new() { type = Component.Type.Factorial, x = Visit(context.x) };
+    }
+
+    public override Component VisitRoot(MathParser.RootContext context)
+    {
+        return new()
+            { type = Component.Type.Root, x = Visit(context.x), y = Visit(context.i) };
+    }
+
+    public override Component VisitExprOp(MathParser.ExprOpContext context)
+    {
+        return new()
         {
-            MathLexer.OP_ADD => Component.Operator.Add,
-            MathLexer.OP_SUB => Component.Operator.Subtract,
-            MathLexer.OP_MUL => Component.Operator.Multiply,
-            MathLexer.OP_DIV => Component.Operator.Divide,
-            MathLexer.OP_MOD => Component.Operator.Modulus,
-            MathLexer.POW => Component.Operator.Power,
-            _ => throw new NotSupportedException(context.op().GetText())
-        },
-        x = Visit(context.l),
-        y = Visit(context.r)
-    };
+            type = Component.Type.Op,
+            op = context.op().Start.Type switch
+            {
+                MathLexer.OP_ADD => Component.Operator.Add,
+                MathLexer.OP_SUB => Component.Operator.Subtract,
+                MathLexer.OP_MUL => Component.Operator.Multiply,
+                MathLexer.OP_DIV => Component.Operator.Divide,
+                MathLexer.OP_MOD => Component.Operator.Modulus,
+                MathLexer.POW => Component.Operator.Power,
+                _ => throw new NotSupportedException(context.op().GetText())
+            },
+            x = Visit(context.l),
+            y = Visit(context.r)
+        };
+    }
 
-    public override Component VisitEval(MathParser.EvalContext context) => new()
+    public override Component VisitEval(MathParser.EvalContext context)
     {
-        type = Component.Type.Eval,
-        arg = context.name.GetText(),
-        args = VisitVars(context.evalVar())
-    };
+        return new()
+        {
+            type = Component.Type.Eval,
+            arg = context.name.GetText(),
+            args = VisitVars(context.evalVar())
+        };
+    }
 
-    private Component[] VisitVars(MathParser.EvalVarContext[] evalVar) => evalVar.Select(context => new Component()
+    private Component[] VisitVars(MathParser.EvalVarContext[] evalVar)
     {
-        type = Component.Type.EvalVar,
-        arg = context.name.GetText(),
-        x = Visit(context.expr())
-    }).ToArray();
+        return evalVar.Select(context => new Component
+        {
+            type = Component.Type.EvalVar,
+            arg = context.name.GetText(),
+            x = Visit(context.expr())
+        }).ToArray();
+    }
 
-    public override Component Visit(IParseTree? tree) => (tree == null ? null : base.Visit(tree))!;
+    public override Component Visit(IParseTree? tree)
+    {
+        return (tree == null ? null : base.Visit(tree))!;
+    }
 
-    protected override bool ShouldVisitNextChild(IRuleNode node, Component? currentResult) => currentResult == null;
+    protected override bool ShouldVisitNextChild(IRuleNode node, Component? currentResult)
+    {
+        return currentResult == null;
+    }
 }
 
 public sealed class Component
 {
+    public enum FuncX
+    {
+        Sin,
+        Cos,
+        Tan,
+        Log,
+        Sec,
+        Csc,
+        Cot,
+        Hyp,
+        ArcSin,
+        ArcCos,
+        ArcTan
+    }
+
+    public enum Operator
+    {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Modulus,
+        Power
+    }
+
+    public enum Type
+    {
+        Num,
+        Var,
+        FuncX,
+        Factorial,
+        Root,
+        Frac,
+        Eval,
+        EvalVar,
+        Op
+    }
+
     public Type type { get; init; }
     public FuncX? func { get; init; }
     public Operator? op { get; init; }
@@ -89,7 +158,7 @@ public sealed class Component
     public List<string> EnumerateVars()
     {
         if (type == Type.Var)
-            return new List<string>() { (arg as string)! };
+            return new List<string> { (arg as string)! };
         List<string> vars = new();
         if (type == Type.Eval)
         {
@@ -97,6 +166,7 @@ public sealed class Component
             foreach (var arg in args)
                 vars.Add(arg.arg!.ToString()!);
         }
+
         x?.EnumerateVars().ForEach(vars.Add);
         y?.EnumerateVars().ForEach(vars.Add);
         return vars;
@@ -145,10 +215,11 @@ public sealed class Component
                         return Math.Atan(x!.Value);
                     case null: throw new Exception("invalid state");
                 }
+
                 break;
             case Type.Factorial:
-                int yield = 1;
-                for (int rem = (int)x!.Value; rem > 0; rem--)
+                var yield = 1;
+                for (var rem = (int)x!.Value; rem > 0; rem--)
                     yield *= rem;
                 return yield;
             case Type.Root:
@@ -173,6 +244,7 @@ public sealed class Component
                         return Math.Pow(x!.Value, y!.Value);
                     case null: throw new Exception("invalid state");
                 }
+
                 break;
             case Type.Eval:
                 var sub = Program.LoadFunc(arg!.ToString()!);
@@ -184,7 +256,7 @@ public sealed class Component
                 return sub.Evaluate(subCtx);
         }
 
-        throw new NotSupportedException(this.ToString());
+        throw new NotSupportedException(ToString());
     }
 
     public override string ToString()
@@ -209,54 +281,18 @@ public sealed class Component
                     Operator.Add => '+',
                     Operator.Subtract => '-',
                     Operator.Multiply => '*',
-                    Operator.Divide => '/', 
+                    Operator.Divide => '/',
                     Operator.Modulus => '%',
                     Operator.Power => '^',
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 return $"{x}{op}{y}";
             case Type.Eval:
-                return $"${arg}" + (args.Length == 0 ? string.Empty : $"{{{string.Join("; ", args.Select(var => $"{var.arg}={var.x}"))}}}");
+                return $"${arg}" + (args.Length == 0
+                    ? string.Empty
+                    : $"{{{string.Join("; ", args.Select(var => $"{var.arg}={var.x}"))}}}");
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
-    }
-
-    public enum Type
-    {
-        Num,
-        Var,
-        FuncX,
-        Factorial,
-        Root,
-        Frac,
-        Eval,
-        EvalVar,
-        Op
-    }
-
-    public enum FuncX
-    {
-        Sin,
-        Cos,
-        Tan,
-        Log,
-        Sec,
-        Csc,
-        Cot,
-        Hyp,
-        ArcSin,
-        ArcCos,
-        ArcTan
-    }
-
-    public enum Operator
-    {
-        Add,
-        Subtract,
-        Multiply,
-        Divide,
-        Modulus,
-        Power
     }
 }

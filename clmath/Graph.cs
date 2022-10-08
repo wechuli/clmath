@@ -1,8 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Drawing;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 
@@ -10,16 +6,42 @@ namespace clmath;
 
 public sealed class GraphWindow : IDisposable
 {
-    private static readonly DirectoryInfo AssemblyDir;
     private const int maxFuncs = 6;
+    private static readonly DirectoryInfo AssemblyDir;
+
+    private static readonly double[] axies_verts =
+    {
+        // x axis
+        -1, 0, //0,
+        1, 0, //0,
+
+        // y axis
+        0, -1, //0,
+        0, 1 //0
+    };
+
+    private static readonly uint[] axies_indices =
+    {
+        // x axis
+        0, 1,
+
+        // y axis
+        2, 3
+    };
+
     private readonly MathContext[] ctx;
-    private double scaleX = 3.5;
-    private double scaleY = 1.5;
-    private Component[] x;
+    private readonly uint[] curves_vao;
+    private readonly uint[] curves_vbo;
+    private readonly uint[] curves_vtx_count;
 
     private readonly List<Component> fx;
-    private IWindow window { get; }
-    private GL gl { get; set; }
+
+    private uint ax_vao;
+    private uint ax_vbo;
+    private readonly double scaleX = 15;
+    private readonly double scaleY = 6;
+    private uint shaders;
+    private readonly Component[] x;
 
     static GraphWindow()
     {
@@ -35,7 +57,7 @@ public sealed class GraphWindow : IDisposable
         }
 
         this.fx = fx.ToList();
-        this.window = Window.Create(WindowOptions.Default);
+        window = Window.Create(WindowOptions.Default);
         window.Title = "2D Graph";
 
         var fxn = fx.Length;
@@ -44,13 +66,13 @@ public sealed class GraphWindow : IDisposable
         curves_vbo = new uint[fxn];
         curves_vtx_count = new uint[fxn];
         x = new Component[fxn];
-        for (int i = 0; i < fxn; i++)
+        for (var i = 0; i < fxn; i++)
         {
             ctx[i] = new MathContext();
             var key = fx[i].EnumerateVars()[0];
-            ctx[i].var[key] = x[i] = new Component() { type = Component.Type.Num, arg = (double)0 };
+            ctx[i].var[key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
         }
-        
+
         window.Load += Load;
         window.FramebufferResize += Resize;
         window.Render += Render;
@@ -58,37 +80,20 @@ public sealed class GraphWindow : IDisposable
         window.Run();
     }
 
+    private IWindow window { get; }
+    private GL gl { get; set; }
+
+    public void Dispose()
+    {
+        gl.Dispose();
+        window.Dispose();
+    }
+
     private void Resize(Vector2D<int> s)
     {
         // Adjust the viewport to the new window size
         gl.Viewport(s);
     }
-
-    private static readonly double[] axies_verts = new double[]
-    {
-        // x axis
-        -1, 0, //0,
-        1, 0, //0,
-            
-        // y axis
-        0, -1, //0,
-        0, 1, //0
-    };
-    private static readonly uint[] axies_indices = new uint[]
-    {
-        // x axis
-        0, 1,
-
-        // y axis
-        2, 3
-    };
-
-    private uint ax_vao;
-    private uint ax_vbo;
-    private readonly uint[] curves_vao;
-    private readonly uint[] curves_vbo;
-    private readonly uint[] curves_vtx_count;
-    private uint shaders;
 
     private void Load()
     {
@@ -98,16 +103,16 @@ public sealed class GraphWindow : IDisposable
         gl.DebugMessageCallback((source, type, id, severity, length, message, param) 
             => Console.WriteLine($"source:{source}\ntype:{type}\nid:{id}\nseverity:{severity}\nlength:{length}\nmsg:{Marshal.PtrToStringAnsi(message)}\n"), null);
         */
-        
+
         // shaders
         LoadShaders();
-        
+
         // graphics
         InitGraphCross();
         InitGraphCurve();
     }
 
-    private unsafe void LoadShaders()
+    private void LoadShaders()
     {
         shaders = gl.CreateProgram();
 
@@ -137,8 +142,10 @@ public sealed class GraphWindow : IDisposable
 
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, ax_vbo);
         fixed (double* ax_vtx_ptr = &axies_verts[0])
+        {
             gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(axies_verts.Length * sizeof(double)), ax_vtx_ptr,
                 GLEnum.StaticDraw);
+        }
 
         gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 0, null);
         gl.EnableVertexAttribArray(0);
@@ -151,8 +158,8 @@ public sealed class GraphWindow : IDisposable
     private unsafe void InitGraphCurve()
     {
         const double step = 0.1;
-        
-        for (int i = 0; i < fx.Count; i++)
+
+        for (var i = 0; i < fx.Count; i++)
         {
             List<Vector2D<double>> curve = new();
             var lim = scaleX + 1;
@@ -171,8 +178,10 @@ public sealed class GraphWindow : IDisposable
 
             gl.BindBuffer(BufferTargetARB.ArrayBuffer, curves_vbo[i]);
             fixed (double* cv_vtx_ptr = &curve_verts[0])
+            {
                 gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(curve_verts.Length * sizeof(double)), cv_vtx_ptr,
                     GLEnum.StaticDraw);
+            }
 
             gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 0, null);
             gl.EnableVertexAttribArray(0);
@@ -186,14 +195,14 @@ public sealed class GraphWindow : IDisposable
     private void Render(double obj)
     {
         gl.Clear(16640U); // color & depth buffer
-        
+
         gl.UseProgram(shaders);
-        
+
         gl.BindVertexArray(ax_vao);
         gl.ColorMask(true, true, true, true);
         gl.DrawArrays(PrimitiveType.Lines, 0, 4);
 
-        for (int i = 0; i < fx.Count; i++)
+        for (var i = 0; i < fx.Count; i++)
         {
             gl.BindVertexArray(curves_vao[i]);
             switch (i)
@@ -220,14 +229,9 @@ public sealed class GraphWindow : IDisposable
                     gl.ColorMask(true, true, true, true);
                     break;
             }
+
             gl.DrawArrays(PrimitiveType.LineStrip, 0, curves_vtx_count[i] / 2);
             gl.Flush();
         }
-    }
-
-    public void Dispose()
-    {
-        gl.Dispose();
-        window.Dispose();
     }
 }
