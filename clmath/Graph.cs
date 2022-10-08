@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Runtime.InteropServices;
+using GlmSharp;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
@@ -9,11 +10,9 @@ namespace clmath;
 public sealed class GraphWindow : IDisposable
 {
     private static readonly DirectoryInfo AssemblyDir;
-    public const float lim = 1000;
-    public const float res = 0.1f;
+    private readonly MathContext ctx;
     private int scaleX = 1;
     private int scaleY = 1;
-    private MathContext ctx;
     private Component x;
 
     private readonly Component fx;
@@ -70,7 +69,7 @@ public sealed class GraphWindow : IDisposable
     //private uint ax_ebo;
     private uint shaders;
 
-    private unsafe void Load()
+    private void Load()
     {
         gl = window.CreateOpenGL();
         /*
@@ -79,20 +78,38 @@ public sealed class GraphWindow : IDisposable
             => Console.WriteLine($"source:{source}\ntype:{type}\nid:{id}\nseverity:{severity}\nlength:{length}\nmsg:{Marshal.PtrToStringAnsi(message)}\n"), null);
         */
         
-        // shader loading
+        // shaders
+        LoadShaders();
+        
+        // graphics
+        InitGraphCross();
+        InitGraphCurve();
+    }
+
+    private unsafe void LoadShaders()
+    {
+        shaders = gl.CreateProgram();
+
+        // vertex shader
         var shd_vtx = gl.CreateShader(ShaderType.VertexShader);
         gl.ShaderSource(shd_vtx, File.ReadAllText(Path.Combine(AssemblyDir.FullName, "Assets", "vertex.glsl")));
         gl.CompileShader(shd_vtx);
+        gl.AttachShader(shaders, shd_vtx);
+
+        // fragment shader
         var shd_frg = gl.CreateShader(ShaderType.FragmentShader);
         gl.ShaderSource(shd_frg, File.ReadAllText(Path.Combine(AssemblyDir.FullName, "Assets", "fragment.glsl")));
         gl.CompileShader(shd_frg);
-        shaders = gl.CreateProgram();
-        gl.AttachShader(shaders, shd_vtx);
         gl.AttachShader(shaders, shd_frg);
+
+        // cleanup
         gl.LinkProgram(shaders);
         gl.DeleteShader(shd_vtx);
         gl.DeleteShader(shd_frg);
-        
+    }
+
+    private unsafe void InitGraphCross()
+    {
         // graph-cross element
         ax_vao = gl.GenVertexArray();
         ax_vbo = gl.GenBuffer();
@@ -100,22 +117,26 @@ public sealed class GraphWindow : IDisposable
         gl.BindVertexArray(ax_vao);
 
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, ax_vbo);
-        fixed(double* ax_vtx_ptr = &axies_verts[0])
-            gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(axies_verts.Length * sizeof(double)), ax_vtx_ptr, GLEnum.StaticDraw);
-        
+        fixed (double* ax_vtx_ptr = &axies_verts[0])
+            gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(axies_verts.Length * sizeof(double)), ax_vtx_ptr,
+                GLEnum.StaticDraw);
+
         //gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ax_ebo);
         //fixed(uint* ax_idx_ptr = &axies_indices[0])
         //    gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(axies_indices.Length * sizeof(uint)), ax_idx_ptr, GLEnum.StaticDraw);
-        
+
         gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Double, false, 0, null);
         gl.EnableVertexAttribArray(0);
 
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
         //gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
         gl.BindVertexArray(0);
+        gl.Flush();
     }
 
-    private unsafe void Render(double obj)
+    private unsafe void InitGraphCurve() {}
+
+    private void Render(double obj)
     {
         gl.Clear(16640U); // color & depth buffer
         
