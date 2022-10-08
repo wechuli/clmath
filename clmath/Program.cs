@@ -34,10 +34,15 @@ public static class Program
             StdIoMode();
         else
         {
-            var arg = string.Join(" ", args);
-            if (File.Exists(arg))
-                EvalFunc(File.ReadAllText(arg));
-            else EvalFunc(arg);
+            if (args[0] == "graph")
+                StartGraph(ParseFunc(args[1]));
+            else
+            {
+                var arg = string.Join(" ", args);
+                if (File.Exists(arg))
+                    EvalFunc(File.ReadAllText(arg));
+                else EvalFunc(arg);
+            }
         }
     }
 
