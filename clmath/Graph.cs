@@ -49,12 +49,12 @@ public sealed class GraphWindow : IDisposable
     private static readonly double[] axies_verts = new double[]
     {
         // x axis
-        -0.5, 0, //0,
-        0.5, 0, //0,
+        -1, 0, //0,
+        1, 0, //0,
             
         // y axis
-        0, -0.5, //0,
-        0, 0.5, //0
+        0, -1, //0,
+        0, 1, //0
     };
     private static readonly uint[] axies_indices = new uint[]
     {
@@ -73,9 +73,11 @@ public sealed class GraphWindow : IDisposable
     private unsafe void Load()
     {
         gl = window.CreateOpenGL();
+        /*
         gl.Enable(EnableCap.DebugOutput);
         gl.DebugMessageCallback((source, type, id, severity, length, message, param) 
             => Console.WriteLine($"source:{source}\ntype:{type}\nid:{id}\nseverity:{severity}\nlength:{length}\nmsg:{Marshal.PtrToStringAnsi(message)}\n"), null);
+        */
         
         // shader loading
         var shd_vtx = gl.CreateShader(ShaderType.VertexShader);
