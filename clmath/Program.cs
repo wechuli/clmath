@@ -81,15 +81,11 @@ public static class Program
                     }
                     break;
                 case "load":
-                    if (CheckArgumentCount(cmds, 2))
-                        break;
-                    var path = Path.Combine(dir, cmds[1] + Ext);
-                    if (!File.Exists(path))
-                        Console.WriteLine($"Function with name {cmds[1]} not found");
-                    else EvalFunc(File.ReadAllText(path));
+                    if (!IsInvalidArgumentCount(cmds, 2))
+                        EvalFunc(LoadFunc(cmds[1]));
                     break;
                 case "mv" or "rename":
-                    if (CheckArgumentCount(cmds, 3))
+                    if (IsInvalidArgumentCount(cmds, 3))
                         break;
                     var path1 = Path.Combine(dir, cmds[1] + Ext);
                     var path2 = Path.Combine(dir, cmds[2] + Ext);
@@ -98,7 +94,7 @@ public static class Program
                     else File.Move(path1, path2);
                     break;
                 case "delete":
-                    if (CheckArgumentCount(cmds, 2))
+                    if (IsInvalidArgumentCount(cmds, 2))
                         break;
                     var path0 = Path.Combine(dir, cmds[1] + Ext);
                     if (File.Exists(path0))
@@ -117,7 +113,15 @@ public static class Program
         }
     }
 
-    private static bool CheckArgumentCount(string[] arr, int min)
+    internal static Component LoadFunc(string name)
+    {
+        var path = Path.Combine(dir, name + Ext);
+        if (!File.Exists(path))
+            Console.WriteLine($"Function with name {name} not found");
+        return ParseFunc(File.ReadAllText(path));
+    }
+
+    private static bool IsInvalidArgumentCount(string[] arr, int min)
     {
         if (arr.Length < min)
         {
@@ -136,12 +140,11 @@ public static class Program
         return new MathCompiler().Visit(parser.expr());
     }
 
-    private static void EvalFunc(string f)
+    private static void EvalFunc(string f) => EvalFunc(ParseFunc(f), f);
+    
+    private static void EvalFunc(Component func, string? f = null)
     {
-        var func = ParseFunc(f);
-        var vars = func.EnumerateVars().Distinct().ToImmutableList();
-
-        if (vars.Count == 0)
+        if (!func.EnumerateVars().Distinct().Any())
         {
             var res = func.Evaluate(null);
             PrintResult(func, res);
@@ -190,7 +193,7 @@ public static class Program
                             DumpVariables(ctx);
                             break;
                         case "save":
-                            if (CheckArgumentCount(cmds, 2))
+                            if (IsInvalidArgumentCount(cmds, 2))
                                 break;
                             var path = Path.Combine(dir, cmds[1] + Ext);
                             File.WriteAllText(path, f);
@@ -201,7 +204,7 @@ public static class Program
                             break;
                         case "graph":
                             missing = new();
-                            foreach (var var in vars)
+                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars()).Distinct())
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
                             missing.RemoveAll(constants.ContainsKey);
@@ -211,7 +214,7 @@ public static class Program
                             break;
                         case "eval" or "":
                             missing = new();
-                            foreach (var var in vars)
+                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars()).Distinct())
                                 if (!ctx.var.ContainsKey(var))
                                     missing.Add(var);
                             missing.RemoveAll(constants.ContainsKey);

@@ -41,12 +41,19 @@ PAR_L: '(';
 PAR_R: ')';
 IDX_L: '[';
 IDX_R: ']';
+ACC_L: '{';
+ACC_R: '}';
 
 DOT: '.' | ',';
+SEMICOLON: ';';
+DOLLAR: '$';
+EQUALS: '=';
 DIGIT: [0-9];
 num: OP_SUB? DIGIT+ (DOT DIGIT+)?;
-CHAR: [a-zA-Z];
+CHAR: [a-zA-Z_];
 word: CHAR+;
+evalVar: name=word EQUALS expr;
+eval: DOLLAR name=word (ACC_L evalVar (SEMICOLON evalVar)* ACC_R)?;
 
 WS: [ \n\r\t] -> channel(HIDDEN);
 
@@ -77,6 +84,7 @@ expr
     | root              #exprRoot
     | num               #exprNum
     | word              #exprId
+    | eval              #exprEval
 ;
 
 UNMATCHED: . ; // raise errors on unmatched

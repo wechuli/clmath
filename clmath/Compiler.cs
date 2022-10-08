@@ -57,6 +57,20 @@ public class MathCompiler : MathBaseVisitor<Component>
         y = Visit(context.r)
     };
 
+    public override Component VisitEval(MathParser.EvalContext context) => new()
+    {
+        type = Component.Type.Eval,
+        arg = context.name.GetText(),
+        args = VisitVars(context.evalVar())
+    };
+
+    private Component[] VisitVars(MathParser.EvalVarContext[] evalVar) => evalVar.Select(context => new Component()
+    {
+        type = Component.Type.EvalVar,
+        arg = context.name.GetText(),
+        x = Visit(context.expr())
+    }).ToArray();
+
     public override Component Visit(IParseTree? tree) => (tree == null ? null : base.Visit(tree))!;
 
     protected override bool ShouldVisitNextChild(IRuleNode node, Component? currentResult) => currentResult == null;
@@ -70,12 +84,19 @@ public sealed class Component
     public Component? x { get; init; }
     public Component? y { get; init; }
     public object? arg { get; set; }
+    public Component[] args { get; init; }
 
     public List<string> EnumerateVars()
     {
         if (type == Type.Var)
             return new List<string>() { (arg as string)! };
         List<string> vars = new();
+        if (type == Type.Eval)
+        {
+            Program.LoadFunc(arg!.ToString()!).EnumerateVars().ForEach(vars.Add);
+            foreach (var arg in args)
+                vars.Add(arg.arg!.ToString()!);
+        }
         x?.EnumerateVars().ForEach(vars.Add);
         y?.EnumerateVars().ForEach(vars.Add);
         return vars;
@@ -153,6 +174,14 @@ public sealed class Component
                     case null: throw new Exception("invalid state");
                 }
                 break;
+            case Type.Eval:
+                var sub = Program.LoadFunc(arg!.ToString()!);
+                var subCtx = new MathContext();
+                foreach (var (key, value) in ctx!.var)
+                    subCtx.var[key] = value;
+                foreach (var var in args)
+                    subCtx.var[var.arg!.ToString()!] = var.x!;
+                return sub.Evaluate(subCtx);
         }
 
         throw new NotSupportedException(this.ToString());
@@ -186,6 +215,8 @@ public sealed class Component
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 return $"{x}{op}{y}";
+            case Type.Eval:
+                return $"${arg}" + (args.Length == 0 ? string.Empty : $"{{{string.Join("; ", args.Select(var => $"{var.arg}={var.x}"))}}}");
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
@@ -199,6 +230,8 @@ public sealed class Component
         Factorial,
         Root,
         Frac,
+        Eval,
+        EvalVar,
         Op
     }
 
