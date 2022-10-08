@@ -89,31 +89,33 @@ public sealed class GraphWindow : IDisposable
         
         // graph-cross element
         ax_vbo = gl.GenBuffer();
+        ax_vao = gl.GenVertexArray();
+        ax_ebo = gl.GenBuffer();
+        gl.BindVertexArray(ax_vao);
+
         gl.BindBuffer(BufferTargetARB.ArrayBuffer, ax_vbo);
         fixed(double* ax_vtx_ptr = &axies_verts[0])
             gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(axies_verts.Length * sizeof(double)), ax_vtx_ptr, GLEnum.StaticDraw);
-        ax_ebo = gl.GenBuffer();
+        
         gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ax_ebo);
         fixed(uint* ax_vtx_ptr = &axies_indices[0])
             gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(axies_indices.Length * sizeof(uint)), ax_vtx_ptr, GLEnum.StaticDraw);
-
-        ax_vao = gl.GenVertexArray();
-        gl.BindVertexArray(ax_vao);
-        gl.BindBuffer(BufferTargetARB.ArrayBuffer, ax_vbo);
-        gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ax_ebo);
+        
         gl.VertexAttribPointer(0, 4, VertexAttribPointerType.Double, false, 0, null);
         gl.EnableVertexAttribArray(0);
+
+        gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+        //gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
+        gl.BindVertexArray(0);
     }
 
     private unsafe void Render(double obj)
     {
         gl.Clear(16640U); // color & depth buffer
+        
         gl.UseProgram(shaders);
-
         gl.BindVertexArray(ax_vao);
-        //fixed(uint* idx_ptr = &axies_indices[0])
-            gl.DrawElements(PrimitiveType.Lines, 4, DrawElementsType.UnsignedInt, 0);
-            //gl.DrawArrays(PrimitiveType.Lines, 0, 4);
+        gl.DrawElements(PrimitiveType.Lines, 2, DrawElementsType.UnsignedInt, 0);
         
         gl.Flush();
     }
