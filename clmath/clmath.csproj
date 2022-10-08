@@ -24,5 +24,11 @@
       <PackageReference Include="Silk.NET.OpenGL" Version="2.16.0" />
       <PackageReference Include="Silk.NET.Windowing" Version="2.16.0" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <Content Include="Assets\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
 
 </Project>
