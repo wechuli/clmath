@@ -120,7 +120,7 @@ public sealed class GraphWindow : IDisposable
         gl.UseProgram(shaders);
         gl.BindVertexArray(ax_vao);
         gl.DrawArrays(PrimitiveType.Lines, 0, 4);
-        //gl.DrawElements(PrimitiveType.Lines, 4, DrawElementsType.UnsignedInt, 0);
+        //gl.DrawElements(PrimitiveType.Lines, 2, DrawElementsType.UnsignedInt, 0);
         
         gl.Flush();
     }
