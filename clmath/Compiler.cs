@@ -7,23 +7,22 @@ public class MathCompiler : MathBaseVisitor<Component>
 {
     public override Component VisitNum(MathParser.NumContext context)
     {
-        return new() { type = Component.Type.Num, arg = double.Parse(context.GetText()) };
+        return new Component { type = Component.Type.Num, arg = double.Parse(context.GetText()) };
     }
 
     public override Component VisitWord(MathParser.WordContext context)
     {
-        return new() { type = Component.Type.Var, arg = context.GetText() };
+        return new Component { type = Component.Type.Var, arg = context.GetText() };
     }
 
     public override Component VisitFrac(MathParser.FracContext context)
     {
-        return new()
-            { type = Component.Type.Frac, x = Visit(context.x), y = Visit(context.y) };
+        return new Component { type = Component.Type.Frac, x = Visit(context.x), y = Visit(context.y) };
     }
 
     public override Component VisitFx(MathParser.FxContext context)
     {
-        return new()
+        return new Component
         {
             type = Component.Type.FuncX,
             func = context.func().Start.Type switch
@@ -47,18 +46,17 @@ public class MathCompiler : MathBaseVisitor<Component>
 
     public override Component VisitExprFact(MathParser.ExprFactContext context)
     {
-        return new() { type = Component.Type.Factorial, x = Visit(context.x) };
+        return new Component { type = Component.Type.Factorial, x = Visit(context.x) };
     }
 
     public override Component VisitRoot(MathParser.RootContext context)
     {
-        return new()
-            { type = Component.Type.Root, x = Visit(context.x), y = Visit(context.i) };
+        return new Component { type = Component.Type.Root, x = Visit(context.x), y = Visit(context.i) };
     }
 
     public override Component VisitExprOp1(MathParser.ExprOp1Context context)
     {
-        return new()
+        return new Component
         {
             type = Component.Type.Op,
             op = context.op_1().Start.Type switch
@@ -73,9 +71,10 @@ public class MathCompiler : MathBaseVisitor<Component>
             y = Visit(context.r)
         };
     }
+
     public override Component VisitExprOp2(MathParser.ExprOp2Context context)
     {
-        return new()
+        return new Component
         {
             type = Component.Type.Op,
             op = context.op_2().Start.Type switch
@@ -91,7 +90,7 @@ public class MathCompiler : MathBaseVisitor<Component>
 
     public override Component VisitEval(MathParser.EvalContext context)
     {
-        return new()
+        return new Component
         {
             type = Component.Type.Eval,
             arg = context.name.GetText(),
@@ -209,17 +208,10 @@ public sealed class Component
                     case FuncX.Log:
                         return Math.Log(x!.Value);
                     case FuncX.Sec:
-                        //return Math.Sec(x!.Value);
-                        break;
                     case FuncX.Csc:
-                        //return Math.Csc(x!.Value);
-                        break;
                     case FuncX.Cot:
-                        //return Math.Cot(x!.Value);
-                        break;
                     case FuncX.Hyp:
-                        //return Math.Hyp(x!.Value);
-                        break;
+                        throw new NotImplementedException(func.ToString());
                     case FuncX.ArcSin:
                         return Math.Asin(x!.Value);
                     case FuncX.ArcCos:
