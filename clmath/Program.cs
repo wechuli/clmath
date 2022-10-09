@@ -90,7 +90,11 @@ public static class Program
                     break;
                 case "load":
                     if (!IsInvalidArgumentCount(cmds, 2))
-                        EvalFunc(LoadFunc(cmds[1]));
+                    {
+                        var load = LoadFunc(cmds[1]);
+                        if (load != null) 
+                            EvalFunc(func);
+                    }
                     break;
                 case "mv" or "rename":
                     if (IsInvalidArgumentCount(cmds, 3))
@@ -126,11 +130,14 @@ public static class Program
         }
     }
 
-    internal static Component LoadFunc(string name)
+    internal static Component? LoadFunc(string name)
     {
         var path = Path.Combine(dir, name + Ext);
         if (!File.Exists(path))
+        {
             Console.WriteLine($"Function with name {name} not found");
+            return null;
+        }
         return ParseFunc(File.ReadAllText(path));
     }
 
@@ -161,7 +168,7 @@ public static class Program
 
     private static void EvalFunc(Component func, string? f = null)
     {
-        if (!func.EnumerateVars().Distinct().Any())
+        if (func.EnumerateVars().Distinct().All(constants.ContainsKey))
         {
             var res = func.Evaluate(null);
             PrintResult(func, res);
