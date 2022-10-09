@@ -64,6 +64,7 @@ public static class Program
                 case "": break;
                 case "exit": return;
                 case "help":
+                    Console.WriteLine($"clmath v{typeof(Program).Assembly.GetName().Version} by comroid\n");
                     Console.WriteLine("Available commands:");
                     Console.WriteLine("\thelp\t\tShows this text");
                     Console.WriteLine("\texit\t\tCloses the program");
@@ -203,6 +204,7 @@ public static class Program
                             _exiting = true;
                             return;
                         case "help":
+                            Console.WriteLine($"clmath v{typeof(Program).Assembly.GetName().Version} by comroid\n");
                             Console.WriteLine("Available commands:");
                             Console.WriteLine("\thelp\t\tShows this text");
                             Console.WriteLine("\texit\t\tCloses the program");
