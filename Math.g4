@@ -60,13 +60,15 @@ WS: [ \n\r\t] -> channel(HIDDEN);
 parExpr: PAR_L n=expr PAR_R;
 idxExpr: IDX_L n=expr IDX_R;
 
-op
-    : OP_ADD
-    | OP_SUB
-    | OP_MUL
+op_1
+    : OP_MUL
     | OP_DIV
     | OP_MOD
     | POW
+;
+op_2
+    : OP_ADD
+    | OP_SUB
 ;
 
 // functions
@@ -76,15 +78,16 @@ root: ROOT i=idxExpr? x=parExpr;
 
 // expressions
 expr
-    : l=expr op r=expr  #exprOp
-    | parExpr           #exprPar
-    | frac              #exprFrac
-    | fx                #exprFunc
-    | x=expr FACTORIAL  #exprFact
-    | root              #exprRoot
-    | num               #exprNum
-    | word              #exprId
-    | eval              #exprEval
+    : l=expr op_1 r=expr    #exprOp1
+    | parExpr               #exprPar
+    | frac                  #exprFrac
+    | fx                    #exprFunc
+    | x=expr FACTORIAL      #exprFact
+    | root                  #exprRoot
+    | num                   #exprNum
+    | word                  #exprId
+    | eval                  #exprEval
+    | l=expr op_2 r=expr    #exprOp2
 ;
 
 UNMATCHED: . ; // raise errors on unmatched
