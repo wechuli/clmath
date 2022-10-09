@@ -39,7 +39,11 @@ public static class Program
         {
             if (args[0] == "graph")
             {
-                StartGraph(args.ToList().GetRange(1, args.Length - 1).Select(ParseFunc).ToArray());
+                StartGraph(args.ToList()
+                    .GetRange(1, args.Length - 1)
+                    .Select(ParseFunc)
+                    .Select(fx => (fx, new MathContext()))
+                    .ToArray());
             }
             else
             {
@@ -122,7 +126,11 @@ public static class Program
 
                     break;
                 case "graph":
-                    StartGraph(cmds.ToList().GetRange(1, cmds.Length - 1).Select(ParseFunc).ToArray());
+                    StartGraph(cmds.ToList()
+                        .GetRange(1, cmds.Length - 1)
+                        .Select(ParseFunc)
+                        .Select(fx => (fx, new MathContext()))
+                        .ToArray());
                     break;
                 default:
                     EvalFunc(func);
@@ -272,10 +280,10 @@ public static class Program
         }
     }
 
-    private static void StartGraph(params Component[] func)
+    private static void StartGraph(params (Component fx, MathContext ctx)[] funcs)
     {
         _graph?.Dispose();
-        _graph = new GraphWindow(func);
+        _graph = new GraphWindow(funcs);
     }
 
     private static void DumpVariables(this MathContext ctx)

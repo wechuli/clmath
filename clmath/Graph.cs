@@ -32,37 +32,36 @@ public sealed class GraphWindow : IDisposable
         2, 3
     };
 
+    private readonly Component[] fx;
     private readonly MathContext[] ctx;
+    private readonly Component[] x;
     private readonly uint[] curves_vao;
     private readonly uint[] curves_vbo;
     private readonly uint[] curves_vtx_count;
-
-    private readonly List<Component> fx;
 
     private uint ax_vao;
     private uint ax_vbo;
     private double scaleX = 15;
     private double scaleY = 6;
     private uint shaders;
-    private readonly Component[] x;
 
     static GraphWindow()
     {
         AssemblyDir = new FileInfo(typeof(GraphWindow).Assembly.Location).Directory!;
     }
 
-    public unsafe GraphWindow(params Component[] fx)
+    public unsafe GraphWindow(params (Component fx, MathContext ctx)[] funcs)
     {
-        if (fx.Length > maxFuncs)
+        var fxn = funcs.Length;
+        if (fxn > maxFuncs)
         {
             Console.WriteLine($"Error: Cannot display more than {maxFuncs} functions");
             return;
         }
 
-        this.fx = fx.ToList();
         window = Window.Create(WindowOptions.Default);
 
-        var fxn = fx.Length;
+        fx = new Component[fxn];
         ctx = new MathContext[fxn];
         curves_vao = new uint[fxn];
         curves_vbo = new uint[fxn];
@@ -70,9 +69,10 @@ public sealed class GraphWindow : IDisposable
         x = new Component[fxn];
         for (var i = 0; i < fxn; i++)
         {
-            ctx[i] = new MathContext();
-            var key = fx[i].EnumerateVars()[0];
-            ctx[i].var[key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
+            fx[i] = funcs[i].fx;
+            ctx[i] = new MathContext(funcs[i].ctx);
+            var key = fx[i].EnumerateVars().First(s => !ctx[i].ContainsKey(s));
+            ctx[i][key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
         }
 
         window.Title = "2D Graph";
@@ -182,7 +182,7 @@ public sealed class GraphWindow : IDisposable
     {
         const double step = 0.1;
 
-        for (var i = 0; i < fx.Count; i++)
+        for (var i = 0; i < fx.Length; i++)
         {
             List<Vector2D<double>> curve = new();
             var lim = scaleX + 1;
@@ -225,7 +225,7 @@ public sealed class GraphWindow : IDisposable
         gl.ColorMask(true, true, true, true);
         gl.DrawArrays(PrimitiveType.Lines, 0, 4);
 
-        for (var i = 0; i < fx.Count; i++)
+        for (var i = 0; i < fx.Length; i++)
         {
             gl.BindVertexArray(curves_vao[i]);
             switch (i)
