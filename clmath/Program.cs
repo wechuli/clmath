@@ -94,7 +94,7 @@ public static class Program
                     {
                         var load = LoadFunc(cmds[1]);
                         if (load != null) 
-                            EvalFunc(func);
+                            EvalFunc(load);
                     }
                     break;
                 case "mv" or "rename":
@@ -164,7 +164,8 @@ public static class Program
 
     private static void EvalFunc(string f)
     {
-        EvalFunc(ParseFunc(f), f);
+        var fx = ParseFunc(f);
+        EvalFunc(fx, fx.ToString());
     }
 
     private static void EvalFunc(Component func, string? f = null)
