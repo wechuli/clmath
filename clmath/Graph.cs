@@ -1,6 +1,9 @@
-﻿using Silk.NET.Maths;
+﻿using Silk.NET.GLFW;
+using Silk.NET.Input;
+using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using Silk.NET.Windowing.Glfw;
 
 namespace clmath;
 
@@ -38,8 +41,8 @@ public sealed class GraphWindow : IDisposable
 
     private uint ax_vao;
     private uint ax_vbo;
-    private readonly double scaleX = 15;
-    private readonly double scaleY = 6;
+    private double scaleX = 15;
+    private double scaleY = 6;
     private uint shaders;
     private readonly Component[] x;
 
@@ -48,7 +51,7 @@ public sealed class GraphWindow : IDisposable
         AssemblyDir = new FileInfo(typeof(GraphWindow).Assembly.Location).Directory!;
     }
 
-    public GraphWindow(params Component[] fx)
+    public unsafe GraphWindow(params Component[] fx)
     {
         if (fx.Length > maxFuncs)
         {
@@ -58,7 +61,6 @@ public sealed class GraphWindow : IDisposable
 
         this.fx = fx.ToList();
         window = Window.Create(WindowOptions.Default);
-        window.Title = "2D Graph";
 
         var fxn = fx.Length;
         ctx = new MathContext[fxn];
@@ -73,14 +75,35 @@ public sealed class GraphWindow : IDisposable
             ctx[i].var[key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
         }
 
+        window.Title = "2D Graph";
         window.Load += Load;
         window.FramebufferResize += Resize;
         window.Render += Render;
         window.Closing += Dispose;
+        window.Initialize();
+        foreach (var keyboard in window.CreateInput().Keyboards) 
+            keyboard.KeyDown += KeyDown;
         window.Run();
     }
 
+    private void KeyDown(IKeyboard keyboard, Key key, int _)
+    {
+        if (key == Key.Escape)
+            window.Close();
+        const double delta = 0.5;
+        if (key == Key.Keypad2 && scaleY > delta)
+            scaleY -= delta;
+        if (key == Key.Keypad8)
+            scaleY += delta;
+        if (key == Key.Keypad4 && scaleX > delta)
+            scaleX -= delta;
+        if (key == Key.Keypad6)
+            scaleX += delta;
+        InitGraphCurve();
+    }
+
     private IWindow window { get; }
+
     private GL gl { get; set; }
 
     public void Dispose()
