@@ -1,9 +1,8 @@
-﻿using Silk.NET.GLFW;
+﻿using System.Diagnostics.CodeAnalysis;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
-using Silk.NET.Windowing.Glfw;
 
 namespace clmath;
 
@@ -32,12 +31,13 @@ public sealed class GraphWindow : IDisposable
         2, 3
     };
 
-    private readonly Component[] fx;
     private readonly MathContext[] ctx;
-    private readonly Component[] x;
     private readonly uint[] curves_vao;
     private readonly uint[] curves_vbo;
     private readonly uint[] curves_vtx_count;
+
+    private readonly Component[] fx;
+    private readonly Component[] x;
 
     private uint ax_vao;
     private uint ax_vbo;
@@ -50,7 +50,7 @@ public sealed class GraphWindow : IDisposable
         AssemblyDir = new FileInfo(typeof(GraphWindow).Assembly.Location).Directory!;
     }
 
-    public unsafe GraphWindow(params (Component fx, MathContext ctx)[] funcs)
+    public GraphWindow(params (Component fx, MathContext ctx)[] funcs)
     {
         var fxn = funcs.Length;
         if (fxn > maxFuncs)
@@ -71,8 +71,21 @@ public sealed class GraphWindow : IDisposable
         {
             fx[i] = funcs[i].fx;
             ctx[i] = new MathContext(funcs[i].ctx);
-            var key = fx[i].EnumerateVars().First(s => !ctx[i].ContainsKey(s));
-            ctx[i][key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
+            var vars = fx[i].EnumerateVars();
+            if (vars.Count(s => !ctx[i].var.ContainsKey(s)) > 1)
+            {
+                Console.WriteLine("Error: More than 1 variable is unset");
+                return;
+            }
+
+            var key = vars.FirstOrDefault(s => !ctx[i].var.ContainsKey(s));
+            if (key == null)
+            {
+                key = vars[0];
+                Console.WriteLine($"Error: No variable is unset; falling back to {key}");
+            }
+
+            ctx[i].var[key] = x[i] = new Component { type = Component.Type.Num, arg = (double)0 };
         }
 
         window.Title = "2D Graph";
@@ -81,9 +94,20 @@ public sealed class GraphWindow : IDisposable
         window.Render += Render;
         window.Closing += Dispose;
         window.Initialize();
-        foreach (var keyboard in window.CreateInput().Keyboards) 
+        foreach (var keyboard in window.CreateInput().Keyboards)
             keyboard.KeyDown += KeyDown;
         window.Run();
+    }
+
+    private IWindow window { get; }
+
+    private GL gl { get; set; }
+
+    [SuppressMessage("ReSharper", "ConditionalAccessQualifierIsNonNullableAccordingToAPIContract")]
+    public void Dispose()
+    {
+        gl?.Dispose();
+        window?.Dispose();
     }
 
     private void KeyDown(IKeyboard keyboard, Key key, int _)
@@ -100,16 +124,6 @@ public sealed class GraphWindow : IDisposable
         if (key == Key.Keypad6)
             scaleX += delta;
         InitGraphCurve();
-    }
-
-    private IWindow window { get; }
-
-    private GL gl { get; set; }
-
-    public void Dispose()
-    {
-        gl.Dispose();
-        window.Dispose();
     }
 
     private void Resize(Vector2D<int> s)

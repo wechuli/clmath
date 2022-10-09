@@ -97,9 +97,10 @@ public static class Program
                     if (!IsInvalidArgumentCount(cmds, 2))
                     {
                         var load = LoadFunc(cmds[1]);
-                        if (load != null) 
+                        if (load != null)
                             EvalFunc(load);
                     }
+
                     break;
                 case "mv" or "rename":
                     if (IsInvalidArgumentCount(cmds, 3))
@@ -147,6 +148,7 @@ public static class Program
             Console.WriteLine($"Function with name {name} not found");
             return null;
         }
+
         return ParseFunc(File.ReadAllText(path));
     }
 
@@ -237,6 +239,7 @@ public static class Program
                                 Console.WriteLine("Error: Cannot save loaded function");
                                 break;
                             }
+
                             var path = Path.Combine(dir, cmds[1] + Ext);
                             File.WriteAllText(path, f);
                             Console.WriteLine($"Function saved as {cmds[1]}");
@@ -245,15 +248,7 @@ public static class Program
                             ctx.var.Clear();
                             break;
                         case "graph":
-                            missing = new List<string>();
-                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars())
-                                         .Distinct())
-                                if (!ctx.var.ContainsKey(var))
-                                    missing.Add(var);
-                            missing.RemoveAll(constants.ContainsKey);
-                            if (missing.Count != 1)
-                                Console.WriteLine("Error: Requires exactly 1 variable");
-                            StartGraph(func);
+                            StartGraph((func, ctx));
                             break;
                         case "eval" or "":
                             missing = new List<string>();
@@ -302,4 +297,11 @@ public static class Program
 public sealed class MathContext
 {
     public readonly Dictionary<string, Component> var = new();
+
+    public MathContext(MathContext? copy = null)
+    {
+        if (copy != null)
+            foreach (var (key, value) in copy.var)
+                var[key] = value;
+    }
 }
