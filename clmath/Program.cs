@@ -220,7 +220,7 @@ public static class Program
                             Console.WriteLine("\thelp\t\tShows this text");
                             Console.WriteLine("\texit\t\tCloses the program");
                             Console.WriteLine("\tdrop\t\tDrops the current function");
-                            Console.WriteLine("\tclear\t\tClears all variables from the cache");
+                            Console.WriteLine("\tclear [var]\tClears all variables or just one from the cache");
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
                             Console.WriteLine("\tsave <name>\tSaves the current function with the given name");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
@@ -245,7 +245,18 @@ public static class Program
                             Console.WriteLine($"Function saved as {cmds[1]}");
                             break;
                         case "clear":
-                            ctx.var.Clear();
+                            if (cmds.Length > 1)
+                            {
+                                if (!ctx.var.ContainsKey(cmds[1]))
+                                {
+                                    Console.WriteLine($"Error: Variable {cmds[1]} not found");
+                                    break;
+                                }
+
+                                ctx.var.Remove(cmds[1]);
+                                Console.WriteLine($"Variable {cmds[1]} deleted");
+                            }
+                            else ctx.var.Clear();
                             break;
                         case "graph":
                             StartGraph((func, ctx));
