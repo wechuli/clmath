@@ -163,7 +163,7 @@ public static class Program
         return false;
     }
 
-    public static Component ParseFunc(string f)
+    private static Component ParseFunc(string f)
     {
         var input = new AntlrInputStream(f);
         var lexer = new MathLexer(input);
