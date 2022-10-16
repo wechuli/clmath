@@ -156,6 +156,11 @@ public static class Program
                 case "unset":
                     if (IsInvalidArgumentCount(cmds, 2))
                         break;
+                    if (globalConstants.ContainsKey(cmds[1]))
+                    {
+                        Console.WriteLine($"Error: Cannot unset {cmds[1]}");
+                        break;
+                    }
                     if (!constants.ContainsKey(cmds[1]))
                     {
                         Console.WriteLine($"Error: Unknown constant {cmds[1]}");
