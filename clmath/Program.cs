@@ -112,12 +112,21 @@ public static class Program
         }
     }
 
+    private static string CleanupString(string str)
+    {
+        int leadingSpaces = 0;
+        for (int i = 0; i < str.Length && str[i] == ' '; i++)
+            leadingSpaces++;
+        return str.Substring(leadingSpaces, str.Length - leadingSpaces);
+    }
+
     private static void StdIoMode()
     {
         while (!_exiting)
         {
             Console.Write("math> ");
             var func = Console.ReadLine()!;
+            func = CleanupString(func);
             var cmds = func.Split(" ");
 
             switch (cmds[0])
@@ -313,6 +322,7 @@ public static class Program
             {
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
+                cmd = CleanupString(cmd);
 
                 if (ConvertValueFromString(cmd) is { } result)
                 {
