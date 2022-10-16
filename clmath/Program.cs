@@ -38,13 +38,7 @@ public static class Program
         else
         {
             if (args[0] == "graph")
-            {
-                StartGraph(args.ToList()
-                    .GetRange(1, args.Length - 1)
-                    .Select(ParseFunc)
-                    .Select(fx => (fx, new MathContext()))
-                    .ToArray());
-            }
+                StartGraph(CreateArgsFuncs(args));
             else
             {
                 var arg = string.Join(" ", args);
@@ -120,24 +114,26 @@ public static class Program
                         File.Delete(path0);
                         Console.WriteLine($"Function with name {cmds[1]} deleted");
                     }
-                    else
-                    {
-                        Console.WriteLine($"Function with name {cmds[1]} not found");
-                    }
+                    else Console.WriteLine($"Function with name {cmds[1]} not found");
 
                     break;
                 case "graph":
-                    StartGraph(cmds.ToList()
-                        .GetRange(1, cmds.Length - 1)
-                        .Select(ParseFunc)
-                        .Select(fx => (fx, new MathContext()))
-                        .ToArray());
+                    StartGraph(CreateArgsFuncs(cmds));
                     break;
                 default:
                     EvalFunc(func);
                     break;
             }
         }
+    }
+
+    private static (Component, MathContext)[] CreateArgsFuncs(params string[] args)
+    {
+        return args.ToList()
+            .GetRange(1, args.Length - 1)
+            .Select(ParseFunc)
+            .Select(fx => (fx, new MathContext()))
+            .ToArray();
     }
 
     internal static Component? LoadFunc(string name)
