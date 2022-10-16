@@ -138,8 +138,8 @@ public static class Program
                     Console.WriteLine("Available commands:");
                     Console.WriteLine("\thelp\t\tShows this text");
                     Console.WriteLine("\texit\t\tCloses the program");
-                    Console.WriteLine("\tset <eq>\tDefines a constant");
-                    Console.WriteLine("\tunset <con>\tRemoves a constant");
+                    Console.WriteLine("\tset <const>\tDefines a constant");
+                    Console.WriteLine("\tunset <const>\tRemoves a constant");
                     Console.WriteLine("\tlist <target>\tLists things");
                     Console.WriteLine("\tload <name>\tLoads function with the given name");
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
@@ -151,7 +151,7 @@ public static class Program
                     var setConstN = ConvertValueFromString(func.Substring("set ".Length, func.Length - "set ".Length));
                     if (setConstN is not {} setConst)
                     {
-                        Console.WriteLine("Error: Invalid declaration of constant variable");
+                        Console.WriteLine("Error: Invalid declaration of constant variable; try 'x = 5'");
                         break;
                     }
                     if (globalConstants.ContainsKey(setConst.key))
