@@ -111,7 +111,7 @@ public static class Program
                         Console.WriteLine($"Function with name {cmds[1]} not found");
                     else File.Move(path1, path2);
                     break;
-                case "delete":
+                case "rm" or "delete":
                     if (IsInvalidArgumentCount(cmds, 2))
                         break;
                     var path0 = Path.Combine(dir, cmds[1] + Ext);
