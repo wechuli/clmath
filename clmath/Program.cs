@@ -14,7 +14,7 @@ public static class Program
     private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
 
     private static bool _exiting;
-    private static GraphWindow? _graph;
+    private static Graph? _graph;
 
     private static readonly Dictionary<string, double> globalConstants = new()
     {
@@ -423,7 +423,7 @@ public static class Program
     private static void StartGraph(params (Component fx, MathContext ctx)[] funcs)
     {
         _graph?.Dispose();
-        _graph = new GraphWindow(funcs);
+        _graph = new Graph(funcs);
     }
 
     private static int DumpVariables(this MathContext ctx, int alignBase = 1)

@@ -6,9 +6,9 @@ using Silk.NET.Windowing;
 
 namespace clmath;
 
-public sealed class GraphWindow : IDisposable
+public sealed class Graph : IDisposable
 {
-    private const int maxFuncs = 6;
+    internal const int maxFuncs = 6;
     private static readonly DirectoryInfo AssemblyDir;
 
     private static readonly double[] axies_verts =
@@ -45,12 +45,12 @@ public sealed class GraphWindow : IDisposable
     private double scaleY = 6;
     private uint shaders;
 
-    static GraphWindow()
+    static Graph()
     {
-        AssemblyDir = new FileInfo(typeof(GraphWindow).Assembly.Location).Directory!;
+        AssemblyDir = new FileInfo(typeof(Graph).Assembly.Location).Directory!;
     }
 
-    public GraphWindow(params (Component fx, MathContext ctx)[] funcs)
+    public Graph(params (Component fx, MathContext ctx)[] funcs)
     {
         var fxn = funcs.Length;
         if (fxn > maxFuncs)
