@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using clmath.Antlr;
@@ -51,6 +52,16 @@ public static class Program
             constants[key] = value.Evaluate(null);
     }
 
+    private static string ConvertValuesToString(Dictionary<string, Component> values, Func<string, bool>? skip = null)
+    {
+        skip ??= _ => false;
+        string txt = string.Empty;
+        foreach (var (key, value) in values)
+            if (!skip(key))
+                txt += $"{key} = {value}\n";
+        return txt;
+    }
+    
     private static string ConvertValuesToString(Dictionary<string, double> values, Func<string, bool>? skip = null)
     {
         skip ??= _ => false;
@@ -191,8 +202,8 @@ public static class Program
                     if (!IsInvalidArgumentCount(cmds, 2))
                     {
                         var load = LoadFunc(cmds[1]);
-                        if (load != null)
-                            EvalFunc(load);
+                        if (load is {} res)
+                            EvalFunc(res.func, ctx: res.ctx);
                     }
 
                     break;
@@ -236,7 +247,7 @@ public static class Program
             .ToArray();
     }
 
-    internal static Component? LoadFunc(string name)
+    internal static (Component func, MathContext ctx)? LoadFunc(string name)
     {
         var path = Path.Combine(dir, name + FuncExt);
         if (!File.Exists(path))
@@ -244,8 +255,16 @@ public static class Program
             Console.WriteLine($"Function with name {name} not found");
             return null;
         }
-
-        return ParseFunc(File.ReadAllText(path));
+        var data = File.ReadAllText(path);
+        var lnb = data.IndexOf("\n", StringComparison.Ordinal);
+        MathContext ctx;
+        if (lnb != -1)
+        {
+            var vars = ConvertValuesFromString(data.Substring(lnb + 1, data.Length - lnb - 2));
+            ctx = new(vars);
+        }
+        else ctx = new();
+        return (ParseFunc(lnb == -1 ? data : data.Substring(0, lnb)), ctx);
     }
 
     private static bool IsInvalidArgumentCount(string[] arr, int min)
@@ -274,7 +293,7 @@ public static class Program
         EvalFunc(fx, fx.ToString());
     }
 
-    private static void EvalFunc(Component func, string? f = null)
+    private static void EvalFunc(Component func, string? f = null, MathContext? ctx = null)
     {
         if (func.EnumerateVars().Distinct().All(constants.ContainsKey))
         {
@@ -284,7 +303,7 @@ public static class Program
         else
         {
             // enter editor mode
-            var ctx = new MathContext();
+            ctx ??= new MathContext();
             while (true)
             {
                 Console.Write($"{func}> ");
@@ -318,7 +337,7 @@ public static class Program
                             Console.WriteLine("\tdrop\t\tDrops the current function");
                             Console.WriteLine("\tclear [var]\tClears all variables or just one from the cache");
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
-                            Console.WriteLine("\tsave <name>\tSaves the current function with the given name");
+                            Console.WriteLine("\tsave <name>\tSaves the current function with the given name; append '-y' to store current variables as well");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
                             Console.WriteLine(
                                 "\teval\t\tEvaluates the function, also achieved by just pressing return");
@@ -335,9 +354,11 @@ public static class Program
                                 Console.WriteLine("Error: Cannot save loaded function");
                                 break;
                             }
-
+                            string data = f;
+                            if (cmds.Length > 2 && cmds[2] == "-y")
+                                data += $"\n{ConvertValuesToString(ctx.var, globalConstants.ContainsKey)}";
                             var path = Path.Combine(dir, cmds[1] + FuncExt);
-                            File.WriteAllText(path, f);
+                            File.WriteAllText(path, data);
                             Console.WriteLine($"Function saved as {cmds[1]}");
                             break;
                         case "clear":
@@ -405,10 +426,18 @@ public sealed class MathContext
 {
     public readonly Dictionary<string, Component> var = new();
 
-    public MathContext(MathContext? copy = null)
+    public MathContext() : this((MathContext?)null)
+    {
+    }
+
+    public MathContext(MathContext? copy) : this(copy?.var)
+    {
+    }
+
+    public MathContext(Dictionary<string, Component>? copy)
     {
         if (copy != null)
-            foreach (var (key, value) in copy.var)
+            foreach (var (key, value) in copy)
                 var[key] = value;
     }
 }
