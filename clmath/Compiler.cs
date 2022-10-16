@@ -262,7 +262,7 @@ public sealed class Component
 
                 break;
             case Type.Eval:
-                if (Program.LoadFunc(arg!.ToString()!) is not {} res)
+                if (Program.LoadFunc(arg!.ToString()!) is not { } res)
                     return double.NaN;
                 var subCtx = new MathContext(res.ctx);
                 foreach (var (key, value) in ctx!.var)
