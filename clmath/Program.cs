@@ -398,11 +398,10 @@ public static class Program
                                 Console.WriteLine(
                                     $"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
                             }
-                            else
-                            {
-                                PrintResult(func, func.Evaluate(ctx), ctx);
-                            }
-
+                            else PrintResult(func, func.Evaluate(ctx), ctx);
+                            break;
+                        default:
+                            Console.WriteLine("Error: Unknown command; type 'help' for a list of commands");
                             break;
                     }
                 }
@@ -430,13 +429,13 @@ public static class Program
     private static void DumpVariables(this MathContext ctx)
     {
         foreach (var (key, val) in ctx.var)
-            Console.WriteLine($"\t{key} = {val}");
+            Console.WriteLine($"\t{key}\t= {val}");
     }
 
     private static void PrintResult(Component func, double res, MathContext? ctx = null)
     {
         ctx?.DumpVariables();
-        Console.WriteLine($"\t{func} = {res}");
+        Console.WriteLine($"\t{func}\t= {res}");
     }
 }
 
