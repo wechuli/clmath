@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Atn;
 using clmath.Antlr;
 
 namespace clmath;
@@ -15,6 +16,7 @@ public static class Program
 
     private static bool _exiting;
     private static Graph? _graph;
+    private static readonly Stack<(Component func, MathContext ctx)> stash = new();
 
     private static readonly Dictionary<string, double> globalConstants = new()
     {
@@ -144,6 +146,7 @@ public static class Program
                     Console.WriteLine("\tload <name>\tLoads function with the given name");
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
                     Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
+                    Console.WriteLine("\trestore <trace>\tRestores a function from stash");
                     Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
@@ -207,8 +210,22 @@ public static class Program
                                     Console.WriteLine($"\t{key}\t= {value}");
                             }
                             break;
+                        case "stash":
+                            if (stash.Count == 0)
+                                Console.WriteLine("No functions in stash");
+                            else
+                            {
+                                Console.WriteLine("Stashed Functions:");
+                                int i = 0;
+                                foreach (var (fx, ctx) in stash)
+                                {
+                                    Console.WriteLine($"\tstash[{i++}]\t= {fx}");
+                                    ctx.DumpVariables("stash[#]".Length / 8 + 1, shouldError: false);
+                                }
+                            }
+                            break;
                         default:
-                            Console.WriteLine($"Error: Unknown listing target '{cmds[1]}';  options are 'funcs' and 'constants'");
+                            Console.WriteLine($"Error: Unknown listing target '{cmds[1]}';  options are 'funcs', 'constants' and 'stash'");
                             break;
                     }
                     break;
@@ -242,8 +259,37 @@ public static class Program
                     else Console.WriteLine($"Function with name {cmds[1]} not found");
 
                     break;
+                case "restore":
+                    (Component func, MathContext ctx) entry;
+                    if (cmds.Length == 1)
+                        entry = stash.Pop();
+                    else
+                    {
+                        if (Regex.Match(cmds[1], "\\d+") is { Success: true })
+                        {
+                            var index = int.Parse(cmds[1]);
+                            if (index > stash.Count)
+                            {
+                                Console.WriteLine($"Error: Backtrace index {index} too large");
+                                break;
+                            }
+                            entry = stash.ToArray()[index];
+                            var bak = stash.ToList();
+                            bak.Remove(entry);
+                            stash.Clear();
+                            bak.Reverse();
+                            bak.ForEach(stash.Push);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Error: Invalid backtrace {cmds[1]}");
+                            break;
+                        }
+                    }
+                    EvalFunc(entry.func, ctx: entry.ctx);
+                    break;
                 case "graph":
-                    StartGraph(CreateArgsFuncs(cmds));
+                    StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(cmds));
                     break;
                 default:
                     EvalFunc(func);
@@ -355,6 +401,7 @@ public static class Program
                             Console.WriteLine("\tclear [var]\tClears all variables or just one from the cache");
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
                             Console.WriteLine("\tsave <name>\tSaves the current function with the given name; append '-y' to store current variables as well");
+                            Console.WriteLine("\tstash\t\tStores the function in stash");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
                             Console.WriteLine(
                                 "\teval\t\tEvaluates the function, also achieved by just pressing return");
@@ -387,8 +434,13 @@ public static class Program
                             }
                             else ctx.var.Clear();
                             break;
+                        case "stash":
+                            stash.Push((func, ctx));
+                            return;
                         case "graph":
-                            StartGraph((func, ctx));
+                            stash.Push((func, ctx));
+                            StartGraph(stash.ToArray());
+                            stash.Pop();
                             break;
                         case "eval":
                             var missing = FindMissingVariables(func, ctx);
@@ -426,11 +478,12 @@ public static class Program
         _graph = new Graph(funcs);
     }
 
-    private static int DumpVariables(this MathContext ctx, int alignBase = 1)
+    private static int DumpVariables(this MathContext ctx, int alignBase = 1, bool shouldError = true)
     {
         if (ctx.var.Count == 0)
         {
-            Console.WriteLine("Error: No variables are set");
+            if (shouldError)
+                Console.WriteLine("Error: No variables are set");
             return 1;
         }
         int maxAlign = ctx.var.Keys.Max(key => key.Length) / 8;
