@@ -7,26 +7,78 @@ namespace clmath;
 
 public static class Program
 {
-    private static readonly string Ext = ".math";
-
-    private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "comroid", "clmath");
+    private static readonly string FuncExt = ".math";
+    private static readonly string ConstExt = ".vars";
+    private static readonly string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "comroid", "clmath");
+    private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
 
     private static bool _exiting;
     private static GraphWindow? _graph;
 
-    internal static readonly Dictionary<string, double> constants = new()
+    private static readonly Dictionary<string, double> globalConstants = new()
     {
         { "pi", Math.PI },
         { "e", Math.E },
         { "tau", Math.Tau }
     };
+    internal static Dictionary<string, double> constants { get; private set; } = null!;
 
     static Program()
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         if (!Directory.Exists(dir))
             Directory.CreateDirectory(dir);
+        if (!File.Exists(constantsFile)) 
+            SaveConstants(new());
+        LoadConstants();
+    }
+
+    private static void SaveConstants(Dictionary<string, double>? values = null)
+    {
+        values ??= constants;
+        File.WriteAllText(constantsFile, ConvertValuesToString(values, globalConstants.ContainsKey));
+    }
+
+    private static void LoadConstants()
+    {
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (constants == null)
+            constants = new();
+        else constants.Clear();
+        foreach (var (key, value) in globalConstants)
+            constants[key] = value;
+        foreach (var (key, value) in ConvertValuesFromString(File.ReadAllText(constantsFile)))
+            constants[key] = value.Evaluate(null);
+    }
+
+    private static string ConvertValuesToString(Dictionary<string, double> values, Func<string, bool>? skip = null)
+    {
+        skip ??= _ => false;
+        string txt = string.Empty;
+        foreach (var (key, value) in values)
+            if (!skip(key))
+                txt += $"{key} = {value}\n";
+        return txt;
+    }
+
+    private static Dictionary<string, Component> ConvertValuesFromString(string data)
+    {
+        Dictionary<string, Component> vars = new();
+        foreach (var (key, value) in data.Replace("\r\n", "\n").Split("\n")
+                     .Select(ConvertValueFromString)
+                     .Where(e => e.HasValue)
+                     .Select(e => e!.Value))
+            vars[key] = value;
+        return vars;
+    }
+
+    private static (string key, Component value)? ConvertValueFromString(string data)
+    {
+        if (Regex.Match(data, "([\\w]+)\\s*=\\s*(.+)") is not { Success: true } matcher)
+            return null;
+        var key = matcher.Groups[1].Value;
+        var value = ParseFunc(matcher.Groups[2].Value);
+        return (key, value);
     }
 
     public static void Main(string[] args)
@@ -66,26 +118,74 @@ public static class Program
                     Console.WriteLine("Available commands:");
                     Console.WriteLine("\thelp\t\tShows this text");
                     Console.WriteLine("\texit\t\tCloses the program");
-                    Console.WriteLine("\tlist\t\tLists all loadable functions");
+                    Console.WriteLine("\tset <eq>\tDefines a constant");
+                    Console.WriteLine("\tunset <con>\tRemoves a constant");
+                    Console.WriteLine("\tlist <target>\tLists things");
                     Console.WriteLine("\tload <name>\tLoads function with the given name");
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
                     Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
                     Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
+                case "set":
+                    var setConstN = ConvertValueFromString(func.Substring("set ".Length, func.Length - "set ".Length));
+                    if (setConstN is not {} setConst)
+                    {
+                        Console.WriteLine("Error: Invalid declaration of constant variable");
+                        break;
+                    }
+                    if (globalConstants.ContainsKey(setConst.key))
+                    {
+                        Console.WriteLine($"Error: Cannot redefine {setConst.key}");
+                        break;
+                    }
+                    constants[setConst.key] = setConst.value.Evaluate(null);
+                    SaveConstants();
+                    break;
+                case "unset":
+                    if (IsInvalidArgumentCount(cmds, 2))
+                        break;
+                    if (!constants.ContainsKey(cmds[1]))
+                    {
+                        Console.WriteLine($"Error: Unknown constant {cmds[1]}");
+                        break;
+                    }
+                    constants.Remove(cmds[1]);
+                    SaveConstants();
+                    break;
                 case "list":
-                    var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
-                    if (funcs.Length == 0)
+                    if (cmds.Length == 1)
                     {
-                        Console.WriteLine("No saved functions");
+                        Console.WriteLine("Error: Listing target unspecified; options are 'funcs' and 'constants'");
+                        break;
                     }
-                    else
+                    switch (cmds[1])
                     {
-                        Console.WriteLine("Available functions:");
-                        foreach (var file in funcs)
-                            Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length - Ext.Length)}");
+                        case "funcs" or "fx":
+                            var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
+                            if (funcs.Length == 0)
+                                Console.WriteLine("No saved functions");
+                            else
+                            {
+                                Console.WriteLine("Available functions:");
+                                foreach (var file in funcs)
+                                    Console.WriteLine($"\t- {file.Name.Substring(0, file.Name.Length - FuncExt.Length)}");
+                            }
+                            break;
+                        case "constants" or "const":
+                            if (constants.Count == 0) 
+                                Console.WriteLine("No available constants");
+                            else
+                            {
+                                Console.WriteLine("Available constants:");
+                                foreach (var (key, value) in constants)
+                                    Console.WriteLine($"\t{key}\t= {value}");
+                            }
+                            break;
+                        default:
+                            Console.WriteLine($"Error: Unknown listing target '{cmds[1]}';  options are 'funcs' and 'constants'");
+                            break;
                     }
-
                     break;
                 case "load":
                     if (!IsInvalidArgumentCount(cmds, 2))
@@ -99,8 +199,8 @@ public static class Program
                 case "mv" or "rename":
                     if (IsInvalidArgumentCount(cmds, 3))
                         break;
-                    var path1 = Path.Combine(dir, cmds[1] + Ext);
-                    var path2 = Path.Combine(dir, cmds[2] + Ext);
+                    var path1 = Path.Combine(dir, cmds[1] + FuncExt);
+                    var path2 = Path.Combine(dir, cmds[2] + FuncExt);
                     if (!File.Exists(path1))
                         Console.WriteLine($"Function with name {cmds[1]} not found");
                     else File.Move(path1, path2);
@@ -108,7 +208,7 @@ public static class Program
                 case "rm" or "delete":
                     if (IsInvalidArgumentCount(cmds, 2))
                         break;
-                    var path0 = Path.Combine(dir, cmds[1] + Ext);
+                    var path0 = Path.Combine(dir, cmds[1] + FuncExt);
                     if (File.Exists(path0))
                     {
                         File.Delete(path0);
@@ -138,7 +238,7 @@ public static class Program
 
     internal static Component? LoadFunc(string name)
     {
-        var path = Path.Combine(dir, name + Ext);
+        var path = Path.Combine(dir, name + FuncExt);
         if (!File.Exists(path))
         {
             Console.WriteLine($"Function with name {name} not found");
@@ -190,15 +290,15 @@ public static class Program
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
 
-                if (Regex.Match(cmd, "([\\w]+)\\s*=\\s*(.+)") is { Success: true } matcher)
+                if (ConvertValueFromString(cmd) is { } result)
                 {
-                    var key = matcher.Groups[1].Value;
-                    var sub = ParseFunc(matcher.Groups[2].Value);
-                    if (sub.EnumerateVars().Contains(key))
+                    var key = result.key;
+                    var value = result.value;
+                    if (value.EnumerateVars().Contains(key))
                         Console.WriteLine($"Error: Variable {key} cannot use itself");
                     else if (constants.ContainsKey(key))
                         Console.WriteLine($"Error: Cannot redefine {key}");
-                    else ctx.var[key] = sub;
+                    else ctx.var[key] = value;
                 }
                 else
                 {
@@ -236,7 +336,7 @@ public static class Program
                                 break;
                             }
 
-                            var path = Path.Combine(dir, cmds[1] + Ext);
+                            var path = Path.Combine(dir, cmds[1] + FuncExt);
                             File.WriteAllText(path, f);
                             Console.WriteLine($"Function saved as {cmds[1]}");
                             break;
