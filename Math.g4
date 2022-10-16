@@ -57,7 +57,6 @@ eval: DOLLAR name=word (ACC_L evalVar (SEMICOLON evalVar)* ACC_R)?;
 
 WS: [ \n\r\t] -> channel(HIDDEN);
 
-parExpr: PAR_L n=expr PAR_R;
 idxExpr: IDX_L n=expr IDX_R;
 
 op_1
@@ -72,14 +71,14 @@ op_2
 ;
 
 // functions
-frac: FRAC x=parExpr y=parExpr;
-fx: func x=parExpr;
-root: ROOT i=idxExpr? x=parExpr;
+frac: FRAC PAR_L x=expr PAR_R PAR_L y=expr PAR_R;
+fx: func PAR_L x=expr PAR_R;
+root: ROOT i=idxExpr? PAR_L x=expr PAR_R;
 
 // expressions
 expr
     : l=expr op_1 r=expr    #exprOp1
-    | parExpr               #exprPar
+    | PAR_L n=expr PAR_R    #exprPar
     | frac                  #exprFrac
     | fx                    #exprFunc
     | x=expr FACTORIAL      #exprFact

@@ -98,6 +98,15 @@ public class MathCompiler : MathBaseVisitor<Component>
         };
     }
 
+    public override Component VisitExprPar(MathParser.ExprParContext context)
+    {
+        return new Component
+        {
+            type = Component.Type.Parentheses,
+            x = Visit(context.n)
+        };
+    }
+
     private Component[] VisitVars(MathParser.EvalVarContext[] evalVar)
     {
         return evalVar.Select(context => new Component
@@ -156,7 +165,8 @@ public sealed class Component
         Frac,
         Eval,
         EvalVar,
-        Op
+        Op,
+        Parentheses
     }
 
     public Type type { get; init; }
@@ -260,6 +270,8 @@ public sealed class Component
                 foreach (var var in args)
                     subCtx.var[var.arg!.ToString()!] = var.x!;
                 return res.func.Evaluate(subCtx);
+            case Type.Parentheses:
+                return x!.Value;
         }
 
         throw new NotSupportedException(ToString());
@@ -297,6 +309,8 @@ public sealed class Component
                 return $"${arg}" + (args.Length == 0
                     ? string.Empty
                     : $"{{{string.Join("; ", args.Select(var => $"{var.arg}={var.x}"))}}}");
+            case Type.Parentheses:
+                return $"({x})";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
