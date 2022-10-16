@@ -354,12 +354,7 @@ public static class Program
                         case "save":
                             if (IsInvalidArgumentCount(cmds, 2))
                                 break;
-                            if (f == null)
-                            {
-                                Console.WriteLine("Error: Cannot save loaded function");
-                                break;
-                            }
-                            string data = f;
+                            string data = f ?? func.ToString();
                             if (cmds.Length > 2 && cmds[2] == "-y")
                                 data += $"\n{ConvertValuesToString(ctx.var, globalConstants.ContainsKey)}";
                             var path = Path.Combine(dir, cmds[1] + FuncExt);
