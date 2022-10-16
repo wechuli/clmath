@@ -333,11 +333,13 @@ public static class Program
                     else if (constants.ContainsKey(key))
                         Console.WriteLine($"Error: Cannot redefine {key}");
                     else ctx.var[key] = value;
+                    
+                    if (FindMissingVariables(func, ctx).Count == 0)
+                        PrintResult(func, func.Evaluate(ctx));
                 }
                 else
                 {
                     var cmds = cmd.Split(" ");
-                    List<string> missing;
                     switch (cmds[0])
                     {
                         case "drop": return;
@@ -388,13 +390,8 @@ public static class Program
                         case "graph":
                             StartGraph((func, ctx));
                             break;
-                        case "eval" or "":
-                            missing = new List<string>();
-                            foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars())
-                                         .Distinct())
-                                if (!ctx.var.ContainsKey(var))
-                                    missing.Add(var);
-                            missing.RemoveAll(constants.ContainsKey);
+                        case "eval":
+                            var missing = FindMissingVariables(func, ctx);
                             if (missing.Count > 0)
                             {
                                 DumpVariables(ctx);
@@ -411,6 +408,17 @@ public static class Program
                 }
             }
         }
+    }
+
+    private static List<string> FindMissingVariables(Component func, MathContext ctx)
+    {
+        var missing = new List<string>();
+        foreach (var var in ctx.var.Values.Append(func).SelectMany(it => it.EnumerateVars())
+                     .Distinct())
+            if (!ctx.var.ContainsKey(var))
+                missing.Add(var);
+        missing.RemoveAll(constants.ContainsKey);
+        return missing;
     }
 
     private static void StartGraph(params (Component fx, MathContext ctx)[] funcs)
