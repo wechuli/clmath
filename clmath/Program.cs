@@ -361,7 +361,7 @@ public static class Program
                             Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                             break;
                         case "dump":
-                            DumpVariables(ctx);
+                            DumpVariables(ctx, func.ToString().Length / 8 + 1);
                             break;
                         case "save":
                             if (IsInvalidArgumentCount(cmds, 2))
@@ -394,7 +394,7 @@ public static class Program
                             var missing = FindMissingVariables(func, ctx);
                             if (missing.Count > 0)
                             {
-                                DumpVariables(ctx);
+                                DumpVariables(ctx, func.ToString().Length / 8 + 1);
                                 Console.WriteLine(
                                     $"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
                             }
@@ -426,16 +426,29 @@ public static class Program
         _graph = new GraphWindow(funcs);
     }
 
-    private static void DumpVariables(this MathContext ctx)
+    private static int DumpVariables(this MathContext ctx, int alignBase = 1)
     {
+        if (ctx.var.Count == 0)
+        {
+            Console.WriteLine("Error: No variables are set");
+            return 1;
+        }
+        int maxAlign = ctx.var.Keys.Max(key => key.Length) / 8;
         foreach (var (key, val) in ctx.var)
-            Console.WriteLine($"\t{key}\t= {val}");
+        {
+            var align = Math.Max(maxAlign > 0 ? maxAlign - alignBase : alignBase, maxAlign - (key.Length / 8 + 1) + alignBase);
+            var spacer = Enumerable.Range(0, align).Aggregate(string.Empty, (str, _) => str + '\t');
+            Console.WriteLine($"\t{key}{spacer}= {val}");
+        }
+        return maxAlign;
     }
 
     private static void PrintResult(Component func, double res, MathContext? ctx = null)
     {
-        ctx?.DumpVariables();
-        Console.WriteLine($"\t{func}\t= {res}");
+        var funcAlign = func.ToString().Length / 8 + 1;
+        var align = Math.Max(1, (ctx?.DumpVariables(funcAlign) ?? 1) - funcAlign);
+        var spacer = Enumerable.Range(0, align).Aggregate(string.Empty, (str, _) => str + '\t');
+        Console.WriteLine($"\t{func}{spacer}= {res}");
     }
 }
 
