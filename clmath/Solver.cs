@@ -108,6 +108,10 @@ public sealed class Solver
                     if (_verbose)
                         Console.Write($" | ^{xCopy}");
                     break;
+                case Component.Type.Parentheses:
+                    rhs = rhs.x!;
+                    WalkComponent_Rec(ref rhs, ref lhs, target);
+                    break;
                 default:
                     throw new NotSupportedException($"It is impossible to reduce by operation {rhs.type}");
             }
