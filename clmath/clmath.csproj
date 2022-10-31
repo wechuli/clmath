@@ -37,9 +37,6 @@
       <None Include="..\icon.ico">
         <Link>icon.ico</Link>
       </None>
-      <None Include="..\icon.png">
-        <Link>icon.png</Link>
-      </None>
     </ItemGroup>
 
 </Project>

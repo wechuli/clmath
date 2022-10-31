@@ -7,6 +7,8 @@ namespace clmath;
 
 public static class Program
 {
+    private const double factorD2R = Math.PI / 180;
+    private const double factorD2G = 1.111111111;
     private static readonly string FuncExt = ".math";
     private static readonly string ConstExt = ".vars";
 
@@ -14,6 +16,7 @@ public static class Program
         "comroid", "clmath");
 
     private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
+    private static readonly string configFile = Path.Combine(dir, "config.bin");
 
     private static bool _exiting;
     private static Graph? _graph;
@@ -26,6 +29,9 @@ public static class Program
         { "tau", Math.Tau }
     };
 
+    private static CalcMode _drg = CalcMode.Deg;
+    private static bool _autoEval = true;
+
     static Program()
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -33,7 +39,30 @@ public static class Program
             Directory.CreateDirectory(dir);
         if (!File.Exists(constantsFile))
             SaveConstants(new Dictionary<string, double>());
+        if (!File.Exists(configFile))
+            SaveConfig();
         LoadConstants();
+        LoadConfig();
+    }
+
+    internal static CalcMode DRG
+    {
+        get => _drg;
+        private set
+        {
+            _drg = value;
+            SaveConfig();
+        }
+    }
+
+    internal static bool AutoEval
+    {
+        get => _autoEval;
+        private set
+        {
+            _autoEval = value;
+            SaveConfig();
+        }
     }
 
     internal static Dictionary<string, double> constants { get; private set; } = null!;
@@ -54,6 +83,28 @@ public static class Program
             constants[key] = value;
         foreach (var (key, value) in ConvertValuesFromString(File.ReadAllText(constantsFile)))
             constants[key] = value.Evaluate(null);
+    }
+
+    private static void SaveConfig()
+    {
+        using var fs = File.OpenWrite(configFile);
+        fs.Write(new[]{(byte) DRG});
+        fs.Write(BitConverter.GetBytes(AutoEval));
+    }
+
+    private static void LoadConfig()
+    {
+        using var fs = File.OpenRead(configFile);
+        _drg = (CalcMode) Read(fs, 1)[0];
+        _autoEval = BitConverter.ToBoolean(Read(fs, sizeof(bool)));
+    }
+
+    private static byte[] Read(Stream s, int len)
+    {
+        byte[] buf = new byte[len];
+        if (len != s.Read(buf, 0, len))
+            throw new Exception("Invalid Number of bytes was read");
+        return buf;
     }
 
     private static string ConvertValuesToString(Dictionary<string, Component> values, Func<string, bool>? skip = null)
@@ -132,6 +183,7 @@ public static class Program
     {
         while (!_exiting)
         {
+            Console.Title = $"[{DRG}] clmath";
             Console.Write("math> ");
             var func = Console.ReadLine()!;
             func = CleanupString(func);
@@ -153,170 +205,37 @@ public static class Program
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
                     Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
                     Console.WriteLine("\trestore <trace>\tRestores a function from stash");
+                    Console.WriteLine("\tclear <target>\tClears the desired target");
+                    Console.WriteLine("\tmode <D/R/G>\tSets the mode to Deg/Rad/Grad");
                     Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
                 case "set":
-                    var setConstN = ConvertValueFromString(func.Substring("set ".Length, func.Length - "set ".Length));
-                    if (setConstN is not { } setConst)
-                    {
-                        Console.WriteLine("Error: Invalid declaration of constant variable; try 'x = 5'");
-                        break;
-                    }
-
-                    if (globalConstants.ContainsKey(setConst.key))
-                    {
-                        Console.WriteLine($"Error: Cannot redefine {setConst.key}");
-                        break;
-                    }
-
-                    constants[setConst.key] = setConst.value.Evaluate(null);
-                    SaveConstants();
+                    CmdSet(func, cmds);
                     break;
                 case "unset":
-                    if (IsInvalidArgumentCount(cmds, 2))
-                        break;
-                    if (globalConstants.ContainsKey(cmds[1]))
-                    {
-                        Console.WriteLine($"Error: Cannot unset {cmds[1]}");
-                        break;
-                    }
-
-                    if (!constants.ContainsKey(cmds[1]))
-                    {
-                        Console.WriteLine($"Error: Unknown constant {cmds[1]}");
-                        break;
-                    }
-
-                    constants.Remove(cmds[1]);
-                    SaveConstants();
+                    CmdUnset(cmds);
                     break;
                 case "list":
-                    if (cmds.Length == 1)
-                    {
-                        Console.WriteLine("Error: Listing target unspecified; options are 'funcs' and 'constants'");
-                        break;
-                    }
-
-                    switch (cmds[1])
-                    {
-                        case "funcs" or "fx":
-                            var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
-                            if (funcs.Length == 0)
-                            {
-                                Console.WriteLine("No saved functions");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Available functions:");
-                                foreach (var file in funcs)
-                                    Console.WriteLine(
-                                        $"\t- {file.Name.Substring(0, file.Name.Length - FuncExt.Length)}");
-                            }
-
-                            break;
-                        case "constants" or "const":
-                            if (constants.Count == 0)
-                            {
-                                Console.WriteLine("No available constants");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Available constants:");
-                                foreach (var (key, value) in constants)
-                                    Console.WriteLine($"\t{key}\t= {value}");
-                            }
-
-                            break;
-                        case "stash":
-                            if (stash.Count == 0)
-                            {
-                                Console.WriteLine("No functions in stash");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Stashed Functions:");
-                                var i = 0;
-                                foreach (var (fx, ctx) in stash)
-                                {
-                                    Console.WriteLine($"\tstash[{i++}]\t= {fx}");
-                                    ctx.DumpVariables("stash[#]".Length / 8 + 1, false);
-                                }
-                            }
-
-                            break;
-                        default:
-                            Console.WriteLine(
-                                $"Error: Unknown listing target '{cmds[1]}';  options are 'funcs', 'constants' and 'stash'");
-                            break;
-                    }
-
+                    CmdList(cmds);
                     break;
                 case "load":
-                    if (!IsInvalidArgumentCount(cmds, 2))
-                    {
-                        var load = LoadFunc(cmds[1]);
-                        if (load is { } res)
-                            EvalFunc(res.func, ctx: res.ctx);
-                    }
-
+                    CmdLoad(cmds);
                     break;
                 case "mv" or "rename":
-                    if (IsInvalidArgumentCount(cmds, 3))
-                        break;
-                    var path1 = Path.Combine(dir, cmds[1] + FuncExt);
-                    var path2 = Path.Combine(dir, cmds[2] + FuncExt);
-                    if (!File.Exists(path1))
-                        Console.WriteLine($"Function with name {cmds[1]} not found");
-                    else File.Move(path1, path2);
+                    CmdMove(cmds);
                     break;
                 case "rm" or "delete":
-                    if (IsInvalidArgumentCount(cmds, 2))
-                        break;
-                    var path0 = Path.Combine(dir, cmds[1] + FuncExt);
-                    if (File.Exists(path0))
-                    {
-                        File.Delete(path0);
-                        Console.WriteLine($"Function with name {cmds[1]} deleted");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Function with name {cmds[1]} not found");
-                    }
-
+                    CmdDelete(cmds);
                     break;
                 case "restore":
-                    (Component func, MathContext ctx) entry;
-                    if (cmds.Length == 1)
-                    {
-                        entry = stash.Pop();
-                    }
-                    else
-                    {
-                        if (Regex.Match(cmds[1], "\\d+") is { Success: true })
-                        {
-                            var index = int.Parse(cmds[1]);
-                            if (index > stash.Count)
-                            {
-                                Console.WriteLine($"Error: Backtrace index {index} too large");
-                                break;
-                            }
-
-                            entry = stash.ToArray()[index];
-                            var bak = stash.ToList();
-                            bak.Remove(entry);
-                            stash.Clear();
-                            bak.Reverse();
-                            bak.ForEach(stash.Push);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Error: Invalid backtrace {cmds[1]}");
-                            break;
-                        }
-                    }
-
-                    EvalFunc(entry.func, ctx: entry.ctx);
+                    CmdRestore(cmds);
+                    break;
+                case "clear":
+                    CmdClearTarget(cmds);
+                    break;
+                case "mode":
+                    CmdMode(cmds);
                     break;
                 case "graph":
                     StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(cmds));
@@ -401,6 +320,7 @@ public static class Program
             ctx ??= new MathContext();
             while (true)
             {
+                Console.Title = $"[{DRG}] {func}";
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
                 cmd = CleanupString(cmd);
@@ -415,7 +335,7 @@ public static class Program
                         Console.WriteLine($"Error: Cannot redefine {key}");
                     else ctx.var[key] = value;
 
-                    if (FindMissingVariables(func, ctx).Count == 0)
+                    if (AutoEval && FindMissingVariables(func, ctx).Count == 0)
                         PrintResult(func, func.Evaluate(ctx));
                 }
                 else
@@ -435,9 +355,15 @@ public static class Program
                             Console.WriteLine("\tdrop\t\tDrops the current function");
                             Console.WriteLine("\tclear [var]\tClears all variables or just one from the cache");
                             Console.WriteLine("\tdump\t\tPrints all variables in the cache");
+                            Console.WriteLine("\tlist <target>\tLists things");
+                            Console.WriteLine(
+                                "\tload <func>\tLoads a function from disk; the current function is kept in a lower execution context");
                             Console.WriteLine(
                                 "\tsave <name>\tSaves the current function with the given name; append '-y' to store current variables as well");
                             Console.WriteLine("\tstash\t\tStores the function in stash");
+                            Console.WriteLine(
+                                "\trestore <id>\tRestore another function; the current function is kept in a lower execution context");
+                            Console.WriteLine("\tmode <D/R/G>\tChanges calculation mode to Deg/Rad/Grad");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
                             Console.WriteLine(
                                 "\teval\t\tEvaluates the function, also achieved by just pressing return");
@@ -446,55 +372,34 @@ public static class Program
                         case "dump":
                             DumpVariables(ctx, func.ToString().Length / 8 + 1);
                             break;
+                        case "list":
+                            CmdList(cmds);
+                            break;
+                        case "load":
+                            CmdLoad(cmds);
+                            break;
                         case "save":
-                            if (IsInvalidArgumentCount(cmds, 2))
-                                break;
-                            var data = f ?? func.ToString();
-                            if (cmds.Length > 2 && cmds[2] == "-y")
-                                data += $"\n{ConvertValuesToString(ctx.var, globalConstants.ContainsKey)}";
-                            var path = Path.Combine(dir, cmds[1] + FuncExt);
-                            File.WriteAllText(path, data);
-                            Console.WriteLine($"Function saved as {cmds[1]}");
+                            CmdSave(cmds, f, func, ctx);
                             break;
                         case "clear":
-                            if (cmds.Length > 1)
-                            {
-                                if (!ctx.var.ContainsKey(cmds[1]))
-                                {
-                                    Console.WriteLine($"Error: Variable {cmds[1]} not found");
-                                    break;
-                                }
-
-                                ctx.var.Remove(cmds[1]);
-                                Console.WriteLine($"Variable {cmds[1]} deleted");
-                            }
-                            else
-                            {
-                                ctx.var.Clear();
-                            }
-
+                            CmdClearVar(cmds, ctx);
                             break;
                         case "stash":
                             stash.Push((func, ctx));
                             return;
+                        case "restore":
+                            CmdRestore(cmds);
+                            break;
+                        case "mode":
+                            CmdMode(cmds);
+                            break;
                         case "graph":
                             stash.Push((func, ctx));
                             StartGraph(stash.ToArray());
                             stash.Pop();
                             break;
                         case "eval":
-                            var missing = FindMissingVariables(func, ctx);
-                            if (missing.Count > 0)
-                            {
-                                DumpVariables(ctx, func.ToString().Length / 8 + 1);
-                                Console.WriteLine(
-                                    $"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
-                            }
-                            else
-                            {
-                                PrintResult(func, func.Evaluate(ctx), ctx);
-                            }
-
+                            CmdEval(func, ctx);
                             break;
                         default:
                             Console.WriteLine("Error: Unknown command; type 'help' for a list of commands");
@@ -503,6 +408,263 @@ public static class Program
                 }
             }
         }
+    }
+
+    private static void CmdSave(string[] cmds, string? f, Component func, MathContext ctx)
+    {
+        if (IsInvalidArgumentCount(cmds, 2))
+            return;
+        var data = f ?? func.ToString();
+        if (cmds.Length > 2 && cmds[2] == "-y")
+            data += $"\n{ConvertValuesToString(ctx.var, globalConstants.ContainsKey)}";
+        var path = Path.Combine(dir, cmds[1] + FuncExt);
+        File.WriteAllText(path, data);
+        Console.WriteLine($"Function saved as {cmds[1]}");
+    }
+
+    private static void CmdClearVar(string[] cmds, MathContext ctx)
+    {
+        if (cmds.Length > 1)
+        {
+            if (!ctx.var.ContainsKey(cmds[1]))
+            {
+                Console.WriteLine($"Error: Variable {cmds[1]} not found");
+                return;
+            }
+
+            ctx.var.Remove(cmds[1]);
+            Console.WriteLine($"Variable {cmds[1]} deleted");
+        }
+        else
+        {
+            ctx.var.Clear();
+        }
+    }
+
+    private static void CmdEval(Component func, MathContext ctx)
+    {
+        var missing = FindMissingVariables(func, ctx);
+        if (missing.Count > 0)
+        {
+            DumpVariables(ctx, func.ToString().Length / 8 + 1);
+            Console.WriteLine(
+                $"Error: Missing variable{(missing.Count != 1 ? "s" : "")} {string.Join(", ", missing)}");
+        }
+        else
+        {
+            PrintResult(func, func.Evaluate(ctx), ctx);
+        }
+    }
+
+    private static void CmdSet(string func, string[] cmds)
+    {
+        var setConstN = ConvertValueFromString(func.Substring("set ".Length, func.Length - "set ".Length));
+        if (setConstN is not { } setConst)
+        {
+            Console.WriteLine("Error: Invalid declaration of constant variable; try 'x = 5'");
+            return;
+        }
+
+        if (globalConstants.ContainsKey(setConst.key))
+        {
+            Console.WriteLine($"Error: Cannot redefine {setConst.key}");
+            return;
+        }
+
+        constants[setConst.key] = setConst.value.Evaluate(null);
+        SaveConstants();
+    }
+
+    private static void CmdUnset(string[] cmds)
+    {
+        if (IsInvalidArgumentCount(cmds, 2))
+            return;
+        if (globalConstants.ContainsKey(cmds[1]))
+        {
+            Console.WriteLine($"Error: Cannot unset {cmds[1]}");
+            return;
+        }
+
+        if (!constants.ContainsKey(cmds[1]))
+        {
+            Console.WriteLine($"Error: Unknown constant {cmds[1]}");
+            return;
+        }
+
+        constants.Remove(cmds[1]);
+        SaveConstants();
+    }
+
+    private static void CmdList(string[] cmds)
+    {
+        if (cmds.Length == 1)
+        {
+            Console.WriteLine("Error: Listing target unspecified; options are 'funcs', 'constants' and 'stash'");
+            return;
+        }
+
+        switch (cmds[1])
+        {
+            case "funcs" or "fx":
+                var funcs = Directory.EnumerateFiles(dir, "*.math").Select(p => new FileInfo(p)).ToArray();
+                if (funcs.Length == 0)
+                {
+                    Console.WriteLine("No saved functions");
+                }
+                else
+                {
+                    Console.WriteLine("Available functions:");
+                    foreach (var file in funcs)
+                        Console.WriteLine(
+                            $"\t- {file.Name.Substring(0, file.Name.Length - FuncExt.Length)}");
+                }
+
+                break;
+            case "constants" or "const":
+                if (constants.Count == 0)
+                {
+                    Console.WriteLine("No available constants");
+                }
+                else
+                {
+                    Console.WriteLine("Available constants:");
+                    foreach (var (key, value) in constants)
+                        Console.WriteLine($"\t{key}\t= {value}");
+                }
+
+                break;
+            case "stash":
+                if (stash.Count == 0)
+                {
+                    Console.WriteLine("No functions in stash");
+                }
+                else
+                {
+                    Console.WriteLine("Stashed Functions:");
+                    var i = 0;
+                    foreach (var (fx, ctx) in stash)
+                    {
+                        Console.WriteLine($"\tstash[{i++}]\t= {fx}");
+                        ctx.DumpVariables("stash[#]".Length / 8 + 1, false);
+                    }
+                }
+
+                break;
+            default:
+                Console.WriteLine(
+                    $"Error: Unknown listing target '{cmds[1]}';  options are 'funcs', 'constants' and 'stash'");
+                break;
+        }
+    }
+
+    private static void CmdLoad(string[] cmds)
+    {
+        if (!IsInvalidArgumentCount(cmds, 2))
+        {
+            var load = LoadFunc(cmds[1]);
+            if (load is { } res)
+                EvalFunc(res.func, ctx: res.ctx);
+        }
+    }
+
+    private static void CmdMove(string[] cmds)
+    {
+        if (IsInvalidArgumentCount(cmds, 3))
+            return;
+        var path1 = Path.Combine(dir, cmds[1] + FuncExt);
+        var path2 = Path.Combine(dir, cmds[2] + FuncExt);
+        if (!File.Exists(path1))
+            Console.WriteLine($"Function with name {cmds[1]} not found");
+        else File.Move(path1, path2);
+    }
+
+    private static void CmdDelete(string[] cmds)
+    {
+        if (IsInvalidArgumentCount(cmds, 2))
+            return;
+        var path0 = Path.Combine(dir, cmds[1] + FuncExt);
+        if (File.Exists(path0))
+        {
+            File.Delete(path0);
+            Console.WriteLine($"Function with name {cmds[1]} deleted");
+        }
+        else
+        {
+            Console.WriteLine($"Function with name {cmds[1]} not found");
+        }
+    }
+
+    private static void CmdRestore(string[] cmds)
+    {
+        (Component func, MathContext ctx) entry;
+        if (cmds.Length == 1)
+        {
+            entry = stash.Pop();
+        }
+        else
+        {
+            if (Regex.Match(cmds[1], "\\d+") is { Success: true })
+            {
+                var index = int.Parse(cmds[1]);
+                if (index > stash.Count)
+                {
+                    Console.WriteLine($"Error: Backtrace index {index} too large");
+                    return;
+                }
+
+                entry = stash.ToArray()[index];
+                var bak = stash.ToList();
+                bak.Remove(entry);
+                stash.Clear();
+                bak.Reverse();
+                bak.ForEach(stash.Push);
+            }
+            else
+            {
+                Console.WriteLine($"Error: Invalid backtrace {cmds[1]}");
+                return;
+            }
+        }
+
+        EvalFunc(entry.func, ctx: entry.ctx);
+    }
+
+    private static void CmdClearTarget(string[] cmds)
+    {
+        if (IsInvalidArgumentCount(cmds, 2))
+            return;
+        switch (cmds[1])
+        {
+            case "stash":
+                stash.Clear();
+                Console.WriteLine("Stash cleared");
+                break;
+            default:
+                Console.WriteLine($"Error: Invalid clear target '{cmds[1]}'; options are 'stash'");
+                break;
+        }
+    }
+
+    private static void CmdMode(string[] cmds)
+    {
+        if (cmds.Length > 1)
+            switch (cmds[1].ToLower())
+            {
+                case "d" or "deg" or "degree":
+                    DRG = CalcMode.Deg;
+                    break;
+                case "r" or "rad" or "radians":
+                    DRG = CalcMode.Rad;
+                    break;
+                case "g" or "grad" or "grade":
+                    DRG = CalcMode.Grad;
+                    break;
+                default:
+                    Console.WriteLine($"Error: Invalid calculation mode '{cmds[1]}'");
+                    break;
+            }
+
+        Console.WriteLine($"Calculation mode is {DRG}");
     }
 
     private static List<string> FindMissingVariables(Component func, MathContext ctx)
@@ -550,6 +712,35 @@ public static class Program
         var spacer = Enumerable.Range(0, align).Aggregate(string.Empty, (str, _) => str + '\t');
         Console.WriteLine($"\t{func}{spacer}= {res}");
     }
+
+    internal static double IntoDRG(double value)
+    {
+        return DRG switch
+        {
+            CalcMode.Deg => value,
+            CalcMode.Rad => value * factorD2R,
+            CalcMode.Grad => value * factorD2G,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Invalid Calculation Mode")
+        };
+    }
+
+    internal static double FromDRG(double value)
+    {
+        return DRG switch
+        {
+            CalcMode.Deg => value,
+            CalcMode.Rad => value / factorD2R,
+            CalcMode.Grad => value / factorD2G,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Invalid Calculation Mode")
+        };
+    }
+}
+
+public enum CalcMode : byte
+{
+    Deg = 0x1,
+    Rad = 0x2,
+    Grad = 0x4
 }
 
 public sealed class MathContext
