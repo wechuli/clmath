@@ -19,6 +19,7 @@ public static class Program
     private static readonly string configFile = Path.Combine(dir, "config.bin");
 
     private static bool _exiting;
+    private static bool _dropAll;
     private static Graph? _graph;
     private static readonly Stack<(Component func, MathContext ctx)> stash = new();
 
@@ -188,6 +189,7 @@ public static class Program
     {
         while (!_exiting)
         {
+            _dropAll = false;
             Console.Title = $"[{DRG}] clmath";
             Console.Write("math> ");
             var func = Console.ReadLine()!;
@@ -331,6 +333,8 @@ public static class Program
             ctx ??= new MathContext();
             while (true)
             {
+                if (_dropAll)
+                    return;
                 Console.Title = $"[{DRG}] {func}";
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
@@ -354,7 +358,9 @@ public static class Program
                     var cmds = cmd.Split(" ");
                     switch (cmds[0])
                     {
-                        case "drop": return;
+                        case "drop":
+                            _dropAll = cmds[^1] == "all";
+                            return;
                         case "exit":
                             _exiting = true;
                             return;
