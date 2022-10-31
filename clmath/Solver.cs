@@ -28,7 +28,7 @@ public sealed class Solver
         {
             if (_verbose)
                 Console.Write($"{lhs} = {rhs}\t");
-            var yCopy = rhs.y?.Copy() ?? new Component { type = Component.Type.Num, arg = 2d };
+            var yCopy = rhs.y?.Copy();
             switch (rhs.type)
             {
                 case Component.Type.Op:
@@ -96,7 +96,7 @@ public sealed class Solver
                     rhs = rhs.x!;
                     break;
                 case Component.Type.Root:
-                    var xCopy = rhs.x!.Copy();
+                    yCopy ??= new Component { type = Component.Type.Num, arg = 2d };
                     lhs = new Component
                     {
                         type = Component.Type.Op,
@@ -106,7 +106,7 @@ public sealed class Solver
                     };
                     rhs = rhs.x!;
                     if (_verbose)
-                        Console.Write($" | ^{xCopy}");
+                        Console.Write($" | ^{yCopy}");
                     break;
                 case Component.Type.Parentheses:
                     rhs = rhs.x!;
