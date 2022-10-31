@@ -162,7 +162,7 @@ public static class Program
             else if (args[0] == "solve")
             {
                 var func = CreateArgsFuncs(3, args)[0];
-                CmdSolve(new []{"solve", args[1], args[2], "-v"}, new Component {type = Component.Type.Var, arg = args[1]}, func.fx, func.ctx);
+                CmdSolve(new []{"solve", args[1], args[2], "-v"}, new Component {type = Component.Type.Var, arg = args[2]}, func.fx, func.ctx);
             }
             else
             {
@@ -201,18 +201,19 @@ public static class Program
                 case "help":
                     Console.WriteLine($"clmath v{typeof(Program).Assembly.GetName().Version} by comroid\n");
                     Console.WriteLine("Available commands:");
-                    Console.WriteLine("\thelp\t\tShows this text");
-                    Console.WriteLine("\texit\t\tCloses the program");
-                    Console.WriteLine("\tset <const>\tDefines a constant");
-                    Console.WriteLine("\tunset <const>\tRemoves a constant");
-                    Console.WriteLine("\tlist <target>\tLists things");
-                    Console.WriteLine("\tload <name>\tLoads function with the given name");
-                    Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
-                    Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
-                    Console.WriteLine("\trestore <trace>\tRestores a function from stash");
-                    Console.WriteLine("\tclear <target>\tClears the desired target");
-                    Console.WriteLine("\tmode <D/R/G>\tSets the mode to Deg/Rad/Grad");
-                    Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
+                    Console.WriteLine("\thelp\t\t\t\tShows this text");
+                    Console.WriteLine("\texit\t\t\t\tCloses the program");
+                    Console.WriteLine("\tset <const>\t\t\tDefines a constant");
+                    Console.WriteLine("\tunset <const>\t\t\tRemoves a constant");
+                    Console.WriteLine("\tlist <target>\t\t\tLists things");
+                    Console.WriteLine("\tload <name>\t\t\tLoads function with the given name");
+                    Console.WriteLine("\tmv <n0> <n1>\t\t\tRename function with the given name");
+                    Console.WriteLine("\tdelete <name>\t\t\tDeletes function with the given name");
+                    Console.WriteLine("\trestore <trace>\t\t\tRestores a function from stash");
+                    Console.WriteLine("\tclear <target>\t\t\tClears the desired target");
+                    Console.WriteLine("\tmode <D/R/G>\t\t\tSets the mode to Deg/Rad/Grad");
+                    Console.WriteLine("\tsolve <var> <lhs> <func>\tSets the mode to Deg/Rad/Grad");
+                    Console.WriteLine("\tgraph <func..>\t\t\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
                 case "set":
@@ -241,6 +242,10 @@ public static class Program
                     break;
                 case "mode":
                     CmdMode(cmds);
+                    break;
+                case "solve":
+                    var f = CreateArgsFuncs(3, cmds)[0];
+                    CmdSolve(cmds, null, f.fx, f.ctx);
                     break;
                 case "graph":
                     StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(1, cmds));
@@ -356,24 +361,24 @@ public static class Program
                         case "help":
                             Console.WriteLine($"clmath v{typeof(Program).Assembly.GetName().Version} by comroid\n");
                             Console.WriteLine("Available commands:");
-                            Console.WriteLine("\thelp\t\tShows this text");
-                            Console.WriteLine("\texit\t\tCloses the program");
-                            Console.WriteLine("\tdrop\t\tDrops the current function");
-                            Console.WriteLine("\tclear [var]\tClears all variables or just one from the cache");
-                            Console.WriteLine("\tdump\t\tPrints all variables in the cache");
-                            Console.WriteLine("\tlist <target>\tLists things");
+                            Console.WriteLine("\thelp\t\t\t\tShows this text");
+                            Console.WriteLine("\texit\t\t\t\tCloses the program");
+                            Console.WriteLine("\tdrop\t\t\t\tDrops the current function");
+                            Console.WriteLine("\tclear [var]\t\t\tClears all variables or just one from the cache");
+                            Console.WriteLine("\tdump\t\t\t\tPrints all variables in the cache");
+                            Console.WriteLine("\tlist <target>\t\t\tLists things");
                             Console.WriteLine(
-                                "\tload <func>\tLoads a function from disk; the current function is kept in a lower execution context");
+                                "\tload <func>\t\t\tLoads a function from disk; the current function is kept in a lower execution context");
                             Console.WriteLine(
-                                "\tsave <name>\tSaves the current function with the given name; append '-y' to store current variables as well");
-                            Console.WriteLine("\tstash\t\tStores the function in stash");
+                                "\tsave <name>\t\t\tSaves the current function with the given name; append '-y' to store current variables as well");
+                            Console.WriteLine("\tstash\t\t\t\tStores the function in stash");
                             Console.WriteLine(
-                                "\trestore <id>\tRestore another function; the current function is kept in a lower execution context");
-                            Console.WriteLine("\tmode <D/R/G>\tChanges calculation mode to Deg/Rad/Grad");
-                            Console.WriteLine("\tsolve <lhs> <var>\tSolves the function after the given variable");
-                            Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
+                                "\trestore <id>\t\t\tRestore another function; the current function is kept in a lower execution context");
+                            Console.WriteLine("\tmode <D/R/G>\t\t\tChanges calculation mode to Deg/Rad/Grad");
+                            Console.WriteLine("\tsolve <var> <lhs>\t\tSolves the function after the given variable");
+                            Console.WriteLine("\tgraph\t\t\t\tDisplays the function in a 2D graph");
                             Console.WriteLine(
-                                "\teval\t\tEvaluates the function, also achieved by just pressing return");
+                                "\teval\t\t\t\tEvaluates the function, also achieved by just pressing return");
                             Console.WriteLine("\nSet variables with an equation (example: 'x = 5' or 'y = x * 2')");
                             break;
                         case "dump":
@@ -424,8 +429,8 @@ public static class Program
     {
         if (IsInvalidArgumentCount(cmds, 3))
             return;
-        lhs ??= new Component { type = Component.Type.Var, arg = cmds[1] };
-        var target = cmds[2];
+        lhs ??= new Component { type = Component.Type.Var, arg = cmds[2] };
+        var target = cmds[1];
         var count = func.EnumerateVars().Count(x => x == target);
         if (count == 0)
         {

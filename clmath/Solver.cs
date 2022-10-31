@@ -22,26 +22,10 @@ public sealed class Solver
         {
             if (verbose)
                 Console.Write($"{lhs} = {rhs}\t");
+            var yCopy = rhs.y?.Copy() ?? new Component { type = Component.Type.Num, arg = 2d };
             switch (rhs.type)
             {
-                case Component.Type.Num:
-                    break;
-                case Component.Type.Var:
-                    break;
-                case Component.Type.FuncX:
-                    break;
-                case Component.Type.Factorial:
-                    break;
-                case Component.Type.Root:
-                    break;
-                case Component.Type.Frac:
-                    break;
-                case Component.Type.Eval:
-                    break;
-                case Component.Type.EvalVar:
-                    break;
                 case Component.Type.Op:
-                    var yCopy = rhs.y!.Copy();
                     switch (rhs.op)
                     {
                         case Component.Operator.Add:
@@ -105,10 +89,21 @@ public sealed class Solver
                         Console.WriteLine(yCopy);
                     rhs = rhs.x!;
                     break;
-                case Component.Type.Parentheses:
+                case Component.Type.Root:
+                    var xCopy = rhs.x!.Copy();
+                    lhs = new Component
+                    {
+                        type = Component.Type.Op,
+                        op = Component.Operator.Power,
+                        x = lhs,
+                        y = yCopy
+                    };
+                    rhs = rhs.x!;
+                    if (verbose)
+                        Console.Write($" | ^{xCopy}");
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new NotSupportedException($"It is impossible to reduce by operation {rhs.type}");
             }
         }
         if (!(rhs.type == Component.Type.Parentheses && rhs.x!.type == Component.Type.Var && (string)rhs.x.arg! == target) 
