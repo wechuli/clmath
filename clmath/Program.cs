@@ -16,6 +16,7 @@ public static class Program
         "comroid", "clmath");
 
     private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
+    private static readonly string configFile = Path.Combine(dir, "config.bin");
 
     private static bool _exiting;
     private static Graph? _graph;
@@ -28,6 +29,9 @@ public static class Program
         { "tau", Math.Tau }
     };
 
+    private static CalcMode _drg = CalcMode.Deg;
+    private static bool _autoEval = true;
+
     static Program()
     {
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -35,10 +39,31 @@ public static class Program
             Directory.CreateDirectory(dir);
         if (!File.Exists(constantsFile))
             SaveConstants(new Dictionary<string, double>());
+        if (!File.Exists(configFile))
+            SaveConfig();
         LoadConstants();
+        LoadConfig();
     }
 
-    internal static CalcMode DRG { get; private set; } = CalcMode.Deg;
+    internal static CalcMode DRG
+    {
+        get => _drg;
+        private set
+        {
+            _drg = value;
+            SaveConfig();
+        }
+    }
+
+    internal static bool AutoEval
+    {
+        get => _autoEval;
+        private set
+        {
+            _autoEval = value;
+            SaveConfig();
+        }
+    }
 
     internal static Dictionary<string, double> constants { get; private set; } = null!;
 
@@ -58,6 +83,28 @@ public static class Program
             constants[key] = value;
         foreach (var (key, value) in ConvertValuesFromString(File.ReadAllText(constantsFile)))
             constants[key] = value.Evaluate(null);
+    }
+
+    private static void SaveConfig()
+    {
+        using var fs = File.OpenWrite(configFile);
+        fs.Write(new[]{(byte) DRG});
+        fs.Write(BitConverter.GetBytes(AutoEval));
+    }
+
+    private static void LoadConfig()
+    {
+        using var fs = File.OpenRead(configFile);
+        _drg = (CalcMode) Read(fs, 1)[0];
+        _autoEval = BitConverter.ToBoolean(Read(fs, sizeof(bool)));
+    }
+
+    private static byte[] Read(Stream s, int len)
+    {
+        byte[] buf = new byte[len];
+        if (len != s.Read(buf, 0, len))
+            throw new Exception("Invalid Number of bytes was read");
+        return buf;
     }
 
     private static string ConvertValuesToString(Dictionary<string, Component> values, Func<string, bool>? skip = null)
@@ -284,7 +331,7 @@ public static class Program
                         Console.WriteLine($"Error: Cannot redefine {key}");
                     else ctx.var[key] = value;
 
-                    if (FindMissingVariables(func, ctx).Count == 0)
+                    if (AutoEval && FindMissingVariables(func, ctx).Count == 0)
                         PrintResult(func, func.Evaluate(ctx));
                 }
                 else
@@ -685,11 +732,11 @@ public static class Program
     }
 }
 
-public enum CalcMode
+public enum CalcMode : byte
 {
-    Deg,
-    Rad,
-    Grad
+    Deg = 0x1,
+    Rad = 0x2,
+    Grad = 0x4
 }
 
 public sealed class MathContext
