@@ -18,7 +18,7 @@ public static class Program
     private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
     private static readonly string configFile = Path.Combine(dir, "config.bin");
 
-    public static bool _exiting;
+    private static bool _exiting;
     private static bool _dropAll;
     private static Graph? _graph;
     private static readonly Stack<(Component func, MathContext ctx)> stash = new();
@@ -46,10 +46,10 @@ public static class Program
         LoadConfig();
     }
 
-    internal static CalcMode DRG
+    public static CalcMode DRG
     {
         get => _drg;
-        private set
+        set
         {
             _drg = value;
             SaveConfig();
@@ -58,8 +58,8 @@ public static class Program
 
     internal static bool AutoEval
     {
-        get => _autoEval;
-        private set
+        get => _autoEval; 
+        set
         {
             _autoEval = value;
             SaveConfig();
@@ -175,6 +175,8 @@ public static class Program
                 Console.ReadLine();
             }
         }
+
+        _exiting = false;
     }
 
     private static string CleanupString(string str)
