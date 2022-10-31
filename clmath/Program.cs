@@ -114,6 +114,8 @@ public static class Program
                 if (File.Exists(arg))
                     EvalFunc(File.ReadAllText(arg));
                 else EvalFunc(arg);
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadLine();
             }
         }
     }
