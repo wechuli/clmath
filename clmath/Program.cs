@@ -18,7 +18,7 @@ public static class Program
     private static readonly string constantsFile = Path.Combine(dir, "constants" + ConstExt);
     private static readonly string configFile = Path.Combine(dir, "config.bin");
 
-    private static bool _exiting;
+    public static bool _exiting;
     private static bool _dropAll;
     private static Graph? _graph;
     private static readonly Stack<(Component func, MathContext ctx)> stash = new();
@@ -148,7 +148,7 @@ public static class Program
         return (key, value);
     }
 
-    public static void Main(string[] args)
+    public static void Main(params string[] args)
     {
         if (args.Length == 0)
         {
@@ -163,7 +163,7 @@ public static class Program
             else if (args[0] == "solve")
             {
                 var func = CreateArgsFuncs(3, args)[0];
-                CmdSolve(new []{"solve", args[1], args[2], "-v"}, new Component {type = Component.Type.Var, arg = args[2]}, func.fx, func.ctx);
+                CmdSolve(new []{"solve", args[1], args[2]/*, "-v"*/}, new Component {type = Component.Type.Var, arg = args[2]}, func.fx, func.ctx);
             }
             else
             {
