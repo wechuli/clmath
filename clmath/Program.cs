@@ -18,6 +18,7 @@ public static class Program
     private static bool _exiting;
     private static Graph? _graph;
     private static readonly Stack<(Component func, MathContext ctx)> stash = new();
+    internal static CalcMode DRG { get; private set; } = CalcMode.Deg;
 
     private static readonly Dictionary<string, double> globalConstants = new()
     {
@@ -151,6 +152,8 @@ public static class Program
                     Console.WriteLine("\tmv <n0> <n1>\tRename function with the given name");
                     Console.WriteLine("\tdelete <name>\tDeletes function with the given name");
                     Console.WriteLine("\trestore <trace>\tRestores a function from stash");
+                    Console.WriteLine("\tclear <target>\tClears the desired target");
+                    Console.WriteLine("\tmode <D/R/G>\tSets the mode to Deg/Rad/Grad");
                     Console.WriteLine("\tgraph <func..>\tDisplays function/s in a 2D graph");
                     Console.WriteLine("\nEnter a function to start evaluating");
                     break;
@@ -315,6 +318,39 @@ public static class Program
                     }
 
                     EvalFunc(entry.func, ctx: entry.ctx);
+                    break;
+                case "clear":
+                    if (IsInvalidArgumentCount(cmds, 2))
+                        break;
+                    switch (cmds[1])
+                    {
+                        case "stash":
+                            stash.Clear();
+                            Console.WriteLine("Stash cleared");
+                            break;
+                        default:
+                            Console.WriteLine($"Error: Invalid clear target '{cmds[1]}'; available options are 'stash'");
+                            break;
+                    }
+                    break;
+                case "mode":
+                    if (cmds.Length > 1)
+                        switch (cmds[1].ToLower())
+                        {
+                            case "d" or "deg" or "degree":
+                                DRG = CalcMode.Deg;
+                                break;
+                            case "r" or "rad" or "radians":
+                                DRG = CalcMode.Rad;
+                                break;
+                            case "g" or "grad" or "grade":
+                                DRG = CalcMode.Grad;
+                                break;
+                            default:
+                                Console.WriteLine($"Error: Invalid calculation mode '{cmds[1]}'");
+                                break;
+                        }
+                    Console.WriteLine($"Calculation mode is {DRG}");
                     break;
                 case "graph":
                     StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(cmds));
@@ -548,6 +584,33 @@ public static class Program
         var spacer = Enumerable.Range(0, align).Aggregate(string.Empty, (str, _) => str + '\t');
         Console.WriteLine($"\t{func}{spacer}= {res}");
     }
+
+
+    private const double factorD2R = Math.PI / 180;
+    private const double factorD2G = 1.111111111;
+    
+    internal static double IntoDRG(double value) => DRG switch
+    {
+        CalcMode.Deg => value,
+        CalcMode.Rad => value * factorD2R,
+        CalcMode.Grad => value * factorD2G,
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Invalid Calculation Mode")
+    };
+
+    internal static double FromDRG(double value) => DRG switch
+    {
+        CalcMode.Deg => value,
+        CalcMode.Rad => value / factorD2R,
+        CalcMode.Grad => value / factorD2G,
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Invalid Calculation Mode")
+    };
+}
+
+public enum CalcMode
+{
+    Deg,
+    Rad,
+    Grad
 }
 
 public sealed class MathContext

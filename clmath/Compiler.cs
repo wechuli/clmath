@@ -210,11 +210,11 @@ public sealed class Component
                 switch (func)
                 {
                     case FuncX.Sin:
-                        return Math.Sin(x!.Value);
+                        return Math.Sin(Program.IntoDRG(x!.Value));
                     case FuncX.Cos:
-                        return Math.Cos(x!.Value);
+                        return Math.Cos(Program.IntoDRG(x!.Value));
                     case FuncX.Tan:
-                        return Math.Tan(x!.Value);
+                        return Math.Tan(Program.IntoDRG(x!.Value));
                     case FuncX.Log:
                         return Math.Log(x!.Value);
                     case FuncX.Sec:
@@ -223,11 +223,11 @@ public sealed class Component
                     case FuncX.Hyp:
                         throw new NotImplementedException(func.ToString());
                     case FuncX.ArcSin:
-                        return Math.Asin(x!.Value);
+                        return Program.FromDRG(Math.Asin(x!.Value));
                     case FuncX.ArcCos:
-                        return Math.Acos(x!.Value);
+                        return Program.FromDRG(Math.Acos(x!.Value));
                     case FuncX.ArcTan:
-                        return Math.Atan(x!.Value);
+                        return Program.FromDRG(Math.Atan(x!.Value));
                     case null: throw new Exception("invalid state");
                 }
 
