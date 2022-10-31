@@ -21,8 +21,9 @@ public sealed class Solver
     {
         if (rhs.x == null && rhs.y == null)
         {
-            // should be unreachable?
-            // maybe needed to do nothing
+            // reverse lhs and rhs
+            (rhs, lhs) = (lhs, rhs);
+            WalkComponent_Rec(ref rhs, ref lhs, target);
         }
         else
         {
@@ -76,7 +77,7 @@ public sealed class Solver
                                 type = Component.Type.Op,
                                 op = Component.Operator.Multiply,
                                 x = lhs,
-                                y = reverse ? xCopy : yCopy
+                                y = yCopy
                             };
                             if (_verbose)
                                 Console.Write(" | *");
@@ -89,14 +90,16 @@ public sealed class Solver
                                 y = rhs.y?.Copy() ?? new Component { type = Component.Type.Num, arg = 2d }
                             };
                             if (_verbose)
-                                Console.Write(" | sqrt(");
+                                Console.WriteLine(Math.Abs((double)lhs.y.arg! - 2d) < 0.001
+                                    ? " | sqrt()"
+                                    : $" | root[{lhs.y}]()");
                             break;
                         default:
                             throw new NotSupportedException($"It is impossible to reduce by operator {rhs.op}");
                     }
-                    if (_verbose)
+                    if (_verbose && rhs.op != Component.Operator.Power)
                         Console.WriteLine(reverse ? xCopy : yCopy);
-                    rhs = reverse ? rhs.y! : rhs.x!;
+                    rhs = reverse && rhs.op != Component.Operator.Divide ? rhs.y! : rhs.x!;
                     break;
                 case Component.Type.FuncX:
                     switch (rhs.func)
@@ -108,6 +111,8 @@ public sealed class Solver
                                 func = Component.FuncX.ArcSin,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | arcsin()");
                             break;
                         case Component.FuncX.Cos:
                             lhs = new Component
@@ -116,6 +121,8 @@ public sealed class Solver
                                 func = Component.FuncX.ArcCos,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | arccos()");
                             break;
                         case Component.FuncX.Tan:
                             lhs = new Component
@@ -124,6 +131,8 @@ public sealed class Solver
                                 func = Component.FuncX.ArcTan,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | arctan()");
                             break;
                         case Component.FuncX.ArcSin:
                             lhs = new Component
@@ -132,6 +141,8 @@ public sealed class Solver
                                 func = Component.FuncX.Sin,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | sin()");
                             break;
                         case Component.FuncX.ArcCos:
                             lhs = new Component
@@ -140,6 +151,8 @@ public sealed class Solver
                                 func = Component.FuncX.Cos,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | cos()");
                             break;
                         case Component.FuncX.ArcTan:
                             lhs = new Component
@@ -148,6 +161,8 @@ public sealed class Solver
                                 func = Component.FuncX.Tan,
                                 x = lhs
                             };
+                            if (_verbose)
+                                Console.WriteLine(" | tan()");
                             break;
                         default:
                             throw new NotImplementedException("Function not implemented: " + rhs.func);
@@ -165,11 +180,27 @@ public sealed class Solver
                     };
                     rhs = rhs.x!;
                     if (_verbose)
-                        Console.Write($" | ^{yCopy}");
+                        Console.WriteLine($" | ^{yCopy}");
+                    break;
+                case Component.Type.Frac:
+                    lhs = new Component
+                    {
+                        type = Component.Type.Op,
+                        op = Component.Operator.Multiply,
+                        x = lhs,
+                        y = yCopy
+                    };
+                    if (_verbose)
+                        Console.Write(" | *");
+                    if (_verbose && rhs.op != Component.Operator.Power)
+                        Console.WriteLine(yCopy);
+                    rhs = rhs.x!;
                     break;
                 case Component.Type.Parentheses:
                     rhs = rhs.x!;
                     WalkComponent_Rec(ref rhs, ref lhs, target);
+                    if (_verbose)
+                        Console.WriteLine(" | remove parens (WIP)");
                     break;
                 default:
                     throw new NotSupportedException($"It is impossible to reduce by operation {rhs.type}");

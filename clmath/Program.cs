@@ -333,7 +333,7 @@ public static class Program
             ctx ??= new MathContext();
             while (true)
             {
-                if (_dropAll)
+                if (_exiting || _dropAll)
                     return;
                 Console.Title = $"[{DRG}] {func}";
                 Console.Write($"{func}> ");
