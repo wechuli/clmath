@@ -285,7 +285,8 @@ public static class Program
     {
         if (arr.Length < min)
         {
-            Console.WriteLine("Error: Not enough arguments");
+            Console.WriteLine(
+                $"Error: Not enough arguments; requires at least {min - 1} argument{(min == 2 ? string.Empty : "s")}");
             return true;
         }
 
