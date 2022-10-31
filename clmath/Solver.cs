@@ -2,25 +2,31 @@
 
 public sealed class Solver
 {
-    public static Component Solve(Component rhs, Component lhs, string target, bool verbose)
+    private readonly bool _verbose;
+
+    public Solver(bool verbose)
     {
-        WalkComponent_Rec(ref rhs, ref lhs, target, verbose);
-        if (verbose)
+        _verbose = verbose;
+    }
+
+    public Component Solve(Component rhs, Component lhs, string target)
+    {
+        WalkComponent_Rec(ref rhs, ref lhs, target);
+        if (_verbose)
             Console.WriteLine($"{lhs} = {rhs}");
         return lhs;
     }
 
-    private static void WalkComponent_Rec(ref Component rhs, ref Component lhs, string target, bool verbose)
+    private void WalkComponent_Rec(ref Component rhs, ref Component lhs, string target)
     {
         if (rhs.x == null && rhs.y == null)
         {
             // should be unreachable?
             // maybe needed to do nothing
-            ReduceCurrent(rhs, ref lhs, target, verbose);
         }
         else
         {
-            if (verbose)
+            if (_verbose)
                 Console.Write($"{lhs} = {rhs}\t");
             var yCopy = rhs.y?.Copy() ?? new Component { type = Component.Type.Num, arg = 2d };
             switch (rhs.type)
@@ -36,7 +42,7 @@ public sealed class Solver
                                 x = lhs,
                                 y = yCopy
                             };
-                            if (verbose)
+                            if (_verbose)
                                 Console.Write(" | -");
                             break;
                         case Component.Operator.Subtract:
@@ -47,7 +53,7 @@ public sealed class Solver
                                 x = lhs,
                                 y = yCopy
                             };
-                            if (verbose)
+                            if (_verbose)
                                 Console.Write(" | +");
                             break;
                         case Component.Operator.Multiply:
@@ -58,7 +64,7 @@ public sealed class Solver
                                 x = lhs,
                                 y = yCopy
                             };
-                            if (verbose)
+                            if (_verbose)
                                 Console.Write(" | /");
                             break;
                         case Component.Operator.Divide:
@@ -69,7 +75,7 @@ public sealed class Solver
                                 x = lhs,
                                 y = yCopy
                             };
-                            if (verbose)
+                            if (_verbose)
                                 Console.Write(" | *");
                             break;
                         case Component.Operator.Power:
@@ -79,13 +85,13 @@ public sealed class Solver
                                 x = lhs,
                                 y = rhs.y?.Copy() ?? new Component { type = Component.Type.Num, arg = 2d }
                             };
-                            if (verbose)
+                            if (_verbose)
                                 Console.Write(" | sqrt(");
                             break;
                         default:
                             throw new NotSupportedException($"It is impossible to reduce by operator {rhs.op}");
                     }
-                    if (verbose)
+                    if (_verbose)
                         Console.WriteLine(yCopy);
                     rhs = rhs.x!;
                     break;
@@ -99,7 +105,7 @@ public sealed class Solver
                         y = yCopy
                     };
                     rhs = rhs.x!;
-                    if (verbose)
+                    if (_verbose)
                         Console.Write($" | ^{xCopy}");
                     break;
                 default:
@@ -108,11 +114,6 @@ public sealed class Solver
         }
         if (!(rhs.type == Component.Type.Parentheses && rhs.x!.type == Component.Type.Var && (string)rhs.x.arg! == target) 
             && !(rhs.type == Component.Type.Var && (string)rhs.arg! == target))
-            WalkComponent_Rec(ref rhs, ref lhs, target, verbose);
-    }
-
-    private static void ReduceCurrent(Component current, ref Component result, string target, bool verbose)
-    {
-        throw new NotImplementedException();
+            WalkComponent_Rec(ref rhs, ref lhs, target);
     }
 }

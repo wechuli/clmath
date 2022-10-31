@@ -442,7 +442,7 @@ public static class Program
             Console.WriteLine($"Error: Variable {target} was found more than once");
             return;
         }
-        var result = Solver.Solve(func, lhs, target, cmds[^1] == "-v");
+        var result = new Solver(cmds[^1] == "-v").Solve(func, lhs, target);
         EvalFunc(result);
     }
 
