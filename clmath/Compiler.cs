@@ -172,8 +172,8 @@ public sealed class Component
     public Type type { get; init; }
     public FuncX? func { get; init; }
     public Operator? op { get; init; }
-    public Component? x { get; init; }
-    public Component? y { get; init; }
+    public Component? x { get; set; }
+    public Component? y { get; set; }
     public object? arg { get; set; }
     public Component[] args { get; init; }
 
@@ -314,5 +314,29 @@ public sealed class Component
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }
+    }
+
+    public bool HasChildren() => x != null || y != null;
+
+    public Component Copy(bool? deepCopy = null)
+    {
+        var _deepCopy = deepCopy ?? HasChildren();
+        var argsCopy = args != null ? new Component[args.Length] : Array.Empty<Component>();
+        for (var i = 0; i < argsCopy.Length; i++)
+            argsCopy[i] = args![i].Copy(deepCopy);
+        var copy = new Component
+        {
+            type = this.type,
+            func = this.func,
+            op = this.op,
+            arg = this.arg,
+            args = argsCopy
+        };
+        if (_deepCopy)
+        {
+            copy.x = this.x?.Copy(deepCopy);
+            copy.y = this.y?.Copy(deepCopy);
+        }
+        return copy;
     }
 }

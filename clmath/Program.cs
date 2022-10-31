@@ -157,7 +157,12 @@ public static class Program
         {
             if (args[0] == "graph")
             {
-                StartGraph(CreateArgsFuncs(args));
+                StartGraph(CreateArgsFuncs(1, args));
+            }
+            else if (args[0] == "solve")
+            {
+                var func = CreateArgsFuncs(3, args)[0];
+                CmdSolve(new []{"solve", args[1], args[2], "-v"}, new Component {type = Component.Type.Var, arg = args[1]}, func.fx, func.ctx);
             }
             else
             {
@@ -238,7 +243,7 @@ public static class Program
                     CmdMode(cmds);
                     break;
                 case "graph":
-                    StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(cmds));
+                    StartGraph(cmds.Length == 1 ? stash.ToArray() : CreateArgsFuncs(1, cmds));
                     break;
                 default:
                     EvalFunc(func);
@@ -247,10 +252,10 @@ public static class Program
         }
     }
 
-    private static (Component, MathContext)[] CreateArgsFuncs(params string[] args)
+    private static (Component fx, MathContext ctx)[] CreateArgsFuncs(int start, params string[] args)
     {
         return args.ToList()
-            .GetRange(1, args.Length - 1)
+            .GetRange(start, args.Length - start)
             .Select(ParseFunc)
             .Select(fx => (fx, new MathContext()))
             .ToArray();
@@ -365,6 +370,7 @@ public static class Program
                             Console.WriteLine(
                                 "\trestore <id>\tRestore another function; the current function is kept in a lower execution context");
                             Console.WriteLine("\tmode <D/R/G>\tChanges calculation mode to Deg/Rad/Grad");
+                            Console.WriteLine("\tsolve <lhs> <var>\tSolves the function after the given variable");
                             Console.WriteLine("\tgraph\t\tDisplays the function in a 2D graph");
                             Console.WriteLine(
                                 "\teval\t\tEvaluates the function, also achieved by just pressing return");
@@ -394,6 +400,9 @@ public static class Program
                         case "mode":
                             CmdMode(cmds);
                             break;
+                        case "solve":
+                            CmdSolve(cmds, null, func, ctx);
+                            break;
                         case "graph":
                             stash.Push((func, ctx));
                             StartGraph(stash.ToArray());
@@ -409,6 +418,27 @@ public static class Program
                 }
             }
         }
+    }
+
+    private static void CmdSolve(string[] cmds, Component? lhs, Component func, MathContext ctx)
+    {
+        if (IsInvalidArgumentCount(cmds, 3))
+            return;
+        lhs ??= new Component { type = Component.Type.Var, arg = cmds[1] };
+        var target = cmds[2];
+        var count = func.EnumerateVars().Count(x => x == target);
+        if (count == 0)
+        {
+            Console.WriteLine($"Error: Variable {target} was not found in function");
+            return;
+        }
+        if (count > 1)
+        {
+            Console.WriteLine($"Error: Variable {target} was found more than once");
+            return;
+        }
+        var result = Solver.Solve(func, lhs, target, cmds[^1] == "-v");
+        EvalFunc(result);
     }
 
     private static void CmdSave(string[] cmds, string? f, Component func, MathContext ctx)
