@@ -181,6 +181,7 @@ public static class Program
     {
         while (!_exiting)
         {
+            Console.Title = $"[{DRG}] clmath";
             Console.Write("math> ");
             var func = Console.ReadLine()!;
             func = CleanupString(func);
@@ -317,6 +318,7 @@ public static class Program
             ctx ??= new MathContext();
             while (true)
             {
+                Console.Title = $"[{DRG}] {func}";
                 Console.Write($"{func}> ");
                 var cmd = Console.ReadLine()!;
                 cmd = CleanupString(cmd);
